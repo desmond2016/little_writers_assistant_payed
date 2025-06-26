@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员后台 - 小小作家助手</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-wrapper">
+        <header class="app-header">
+            <div class="header-controls">
+                <a href="index.html" class="back-btn">← 返回主页</a>
+            </div>
+            
+            <div class="header-center">
+                <img src="assets/images/mascot.svg" alt="小小作家助手吉祥物" class="mascot-icon">
+                <h1>管理员后台</h1>
+                <p class="tagline">兑换码管理和系统统计</p>
+            </div>
+            
+            <div class="user-info" id="userInfo">
+                <!-- 用户信息将通过JavaScript动态加载 -->
+            </div>
+        </header>
+
+        <main class="admin-container">
+            <!-- 统计概览 -->
+            <div class="stats-section">
+                <h2>系统统计</h2>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalCodes">-</div>
+                            <div class="stat-label">总兑换码数</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="usedCodes">-</div>
+                            <div class="stat-label">已使用</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="unusedCodes">-</div>
+                            <div class="stat-label">未使用</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalCredits">-</div>
+                            <div class="stat-label">已发放积分</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 生成兑换码 -->
+            <div class="generate-section">
+                <div class="section-card">
+                    <h3>生成兑换码</h3>
+                    <p class="section-description">创建新的兑换码供用户使用</p>
+                    
+                    <form id="generateForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="creditsValue">积分价值</label>
+                                <input type="number" id="creditsValue" min="1" max="10000" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="expiresDays">有效期（天）</label>
+                                <input type="number" id="expiresDays" min="1" max="365" placeholder="留空表示永不过期">
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="action-btn primary">生成兑换码</button>
+                        </div>
+                    </form>
+                    
+                    <!-- 生成结果 -->
+                    <div class="generate-result" id="generateResult" style="display: none;">
+                        <h4>兑换码生成成功！</h4>
+                        <div class="code-display">
+                            <input type="text" id="generatedCode" readonly>
+                            <button type="button" class="copy-btn" id="copyBtn">复制</button>
+                        </div>
+                        <div class="code-info">
+                            <p>积分价值: <span id="codeCredits">0</span></p>
+                            <p>过期时间: <span id="codeExpires">永不过期</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 积分价值 -->
+            <div class="quick-generate-section">
+                <div class="section-card">
+                    <h3>积分价值</h3>
+                    <p class="section-description">常用积分值的快速生成</p>
+
+                    <div class="quick-buttons">
+                        <button class="quick-btn" data-credits="50" data-days="30">50积分 (5元)</button>
+                        <button class="quick-btn" data-credits="100" data-days="60">100积分 (10元)</button>
+                        <button class="quick-btn" data-credits="200" data-days="90">200积分 (20元)</button>
+                        <button class="quick-btn" data-credits="500" data-days="180">500积分 (50元)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 使用说明 -->
+            <div class="info-section">
+                <div class="section-card">
+                    <h3>使用说明</h3>
+                    <div class="info-list">
+                        <div class="info-item">
+                            <strong>1. 生成兑换码：</strong>
+                            <p>设置积分价值和有效期，点击生成按钮创建兑换码。</p>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>2. 分发兑换码：</strong>
+                            <p>将生成的兑换码发送给付费用户，用户可在个人中心兑换积分。</p>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>3. 积分消耗：</strong>
+                            <p>每次聊天对话消耗1积分。</p>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>4. 有效期管理：</strong>
+                            <p>可设置兑换码有效期，过期后无法使用。留空表示永不过期。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 消息提示 -->
+        <div class="message-container" id="messageContainer"></div>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>

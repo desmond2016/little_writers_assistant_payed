@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小小作家助手</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kaiti,STKaiti&display=swap" rel="stylesheet"> 
+</head>
+<body>
+    <div class="page-wrapper">
+        <header class="app-header">
+            <div class="header-controls">
+                <button type="button" id="toggleSidebars" class="sidebar-toggle-btn" title="折叠侧边栏">
+                    <!-- 展开状态图标：向内收缩的双箭头，表示"收起侧边栏" -->
+                    <svg class="toggle-icon expand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- 左侧箭头向左 -->
+                        <path d="M9 6L3 12L9 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- 右侧箭头向右 -->
+                        <path d="M15 6L21 12L15 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- 中间分隔线 -->
+                        <path d="M12 4V20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                    </svg>
+                    <!-- 折叠状态图标：向外展开的双箭头，表示"展开侧边栏" -->
+                    <svg class="toggle-icon collapse-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- 左侧箭头向右 -->
+                        <path d="M3 6L9 12L3 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- 右侧箭头向左 -->
+                        <path d="M21 6L15 12L21 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- 中间分隔线 -->
+                        <path d="M12 4V20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="header-center">
+                <img src="assets/images/mascot.svg" alt="小小作家助手吉祥物" class="mascot-icon">
+                <h1>小小作家助手</h1>
+                <p class="tagline">与AI一起探索写作的乐趣！</p>
+            </div>
+
+            <div class="user-info" id="userInfo">
+                <!-- 用户信息将通过JavaScript动态加载 -->
+            </div>
+        </header>
+
+        <div class="main-content-area" id="mainContentArea">
+            <aside class="sidebar left-sidebar" id="leftSidebar">
+                <div class="sidebar-header">
+                    <h2>修辞手法小课堂</h2>
+                    <div class="sidebar-icon" title="修辞手法">📝</div>
+                </div>
+                <div class="sidebar-content" id="rhetoricSection">
+                    <div class="rhetoric-item">
+                        <h3>比喻</h3>
+                        <p><strong>定义：</strong>用跟甲事物有相似之点的乙事物来描写或说明甲事物。</p>
+                        <p><strong>举例：</strong>月亮像一个玉盘挂在深蓝的天空中。</p>
+                    </div>
+                    <div class="rhetoric-item">
+                        <h3>拟人</h3>
+                        <p><strong>定义：</strong>把事物人格化，把本来不具备人的一些动作和感情的事物变成和人一样。</p>
+                        <p><strong>举例：</strong>小草偷偷地从土里钻出来，嫩嫩的，绿绿的。</p>
+                    </div>
+                    <div class="rhetoric-item">
+                        <h3>夸张</h3>
+                        <p><strong>定义：</strong>为了达到某种表达效果的需要，对事物的形象、特征、作用、程度等方面着意扩大或缩小的方法。</p>
+                        <p><strong>举例：</strong>飞流直下三千尺，疑是银河落九天。</p>
+                    </div>
+                    <div class="rhetoric-item">
+                        <h3>排比</h3>
+                        <p><strong>定义：</strong>把三个或以上意义相关或相近、结构相同或相似、语气相同的词组或句子并排在一起。</p>
+                        <p><strong>举例：</strong>有的像小鸟，有的像小船，有的像奔马。</p>
+                    </div>
+                    <div class="rhetoric-item">
+                        <h3>对偶 (对仗)</h3>
+                        <p><strong>定义：</strong>用字数相等、结构相同、意义对称的一对短语或句子来表达两个相对或相近的意思。</p>
+                        <p><strong>举例：</strong>两个黄鹂鸣翠柳，一行白鹭上青天。</p>
+                    </div>
+                     <div class="rhetoric-item">
+                        <h3>反问</h3>
+                        <p><strong>定义：</strong>用疑问的形式表达确定的意思，答案常常在问句的方面。</p>
+                        <p><strong>举例：</strong>难道我们不应该热爱自己的祖国吗？</p>
+                    </div>
+                    <div class="rhetoric-item">
+                        <h3>设问</h3>
+                        <p><strong>定义：</strong>为了引起别人的注意，故意先提出问题，然后自己回答。</p>
+                        <p><strong>举例：</strong>什么是美？心灵美才是真的美。</p>
+                    </div>
+                    <div class="rhetoric-item">
+                        <h3>反复</h3>
+                        <p><strong>定义：</strong>为了强调某个意思，突出某种感情，有意重复某个词语或句子。</p>
+                        <p><strong>举例：</strong>盼望着，盼望着，东风来了，春天的脚步近了。</p>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="chat-app-container">
+                <div class="chat-box" id="chatBox">
+                    <div class="message assistant-message">
+                        <img src="assets/images/mascot.svg" alt="助手头像" class="avatar">
+                        <div class="message-content">
+                            <p>你好！我是小小作家助手，你想写一篇关于什么主题的作文呢？试着告诉我你的想法吧！</p>
+                        </div>
+                    </div>
+                    </div>
+                <div class="chat-input-area">
+                    <textarea id="userInput" placeholder="输入你的作文题目或想法..." rows="3"></textarea>
+                    <button type="button" id="sendButton">
+                        发送
+                        <svg class="send-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.00977 21.5L21.9998 12L2.00977 2.5L2.00976 10L14.9998 12L2.00976 14L2.00977 21.5Z" fill="currentColor"/></svg>
+                    </button>
+                </div>
+            </main>
+
+            <aside class="sidebar right-sidebar" id="rightSidebar">
+                <div class="sidebar-header">
+                    <h2>使用小贴士</h2>
+                    <div class="sidebar-icon" title="使用小贴士">💡</div>
+                </div>
+                <div class="sidebar-content" id="usageInstructionsSection">
+                    <ul>
+                        <li><span>1</span>在下方的输入框中告诉我想写的作文题目或主题。</li>
+                        <li><span>2</span>我会通过提问的方式，与你进行多轮对话，帮助你发掘自己的想法和创意。</li>
+                        <li><span>3</span>根据我的提示，一步步思考作文的开头、中间和结尾应该写些什么。</li>
+                        <li><span>4</span>当你觉得思路差不多清晰了，可以点击底部的“帮我完成作文”按钮，我会尝试把你之前的对话整理成一篇小短文哦！</li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+
+        <footer class="app-action-footer">
+            <button type="button" id="completeEssayButton" class="action-button">帮我完成作文</button>
+        </footer>
+    </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
+<div id="essayModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>AI生成的作文</h2>
+                <button type="button" id="closeModalButton" class="close-button">&times;</button>
+            </div>
+            <div class="modal-body" id="completedEssayBody">
+                </div>
+            <div class="modal-footer">
+                <button type="button" id="downloadPdfButton" class="action-button">下载PDF</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

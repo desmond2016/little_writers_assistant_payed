@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 小小作家助手</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/profile.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-wrapper">
+        <header class="app-header">
+            <div class="header-controls">
+                <a href="index.html" class="back-btn">← 返回主页</a>
+            </div>
+            
+            <div class="header-center">
+                <img src="assets/images/mascot.svg" alt="小小作家助手吉祥物" class="mascot-icon">
+                <h1>个人中心</h1>
+                <p class="tagline">管理您的账户和积分</p>
+            </div>
+            
+            <div class="user-info" id="userInfo">
+                <!-- 用户信息将通过JavaScript动态加载 -->
+            </div>
+        </header>
+
+        <main class="profile-container">
+            <!-- 用户信息卡片 -->
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="user-avatar-large" id="userAvatarLarge">U</div>
+                    <div class="user-details-large">
+                        <h2 id="userName">用户名</h2>
+                        <p id="userEmail">email@example.com</p>
+                        <p class="join-date">注册时间: <span id="joinDate">2024-01-01</span></p>
+                    </div>
+                </div>
+                
+                <div class="credits-section">
+                    <div class="credits-display">
+                        <div class="credits-icon">💰</div>
+                        <div class="credits-info">
+                            <h3>当前积分</h3>
+                            <div class="credits-amount" id="creditsAmount">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="credits-actions">
+                        <button class="action-btn primary" id="redeemBtn">兑换积分</button>
+                        <button class="action-btn" id="viewHistoryBtn">使用记录</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 兑换码输入区域 -->
+            <div class="redeem-section" id="redeemSection" style="display: none;">
+                <div class="section-card">
+                    <h3>兑换积分</h3>
+                    <p class="section-description">输入兑换码来获取积分</p>
+                    
+                    <form id="redeemForm">
+                        <div class="form-group">
+                            <label for="redeemCode">兑换码</label>
+                            <input type="text" id="redeemCode" placeholder="请输入16位兑换码" maxlength="16" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="action-btn primary">兑换</button>
+                            <button type="button" class="action-btn secondary" id="cancelRedeemBtn">取消</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 使用记录区域 -->
+            <div class="history-section" id="historySection" style="display: none;">
+                <div class="section-card">
+                    <h3>使用记录</h3>
+                    <p class="section-description">查看您的积分使用历史</p>
+                    
+                    <div class="history-tabs">
+                        <button class="tab-btn active" data-tab="usage">使用记录</button>
+                        <button class="tab-btn" data-tab="redemption">兑换记录</button>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="usageTab">
+                            <div class="history-list" id="usageHistory">
+                                <div class="loading">加载中...</div>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-pane" id="redemptionTab">
+                            <div class="history-list" id="redemptionHistory">
+                                <div class="loading">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="action-btn secondary" id="closeHistoryBtn">关闭</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 积分说明 -->
+            <div class="info-section">
+                <div class="section-card">
+                    <h3>积分说明</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-icon">💬</div>
+                            <div class="info-content">
+                                <h4>聊天对话</h4>
+                                <p>每次与AI对话消耗 <strong>1积分</strong></p>
+                            </div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-icon">📝</div>
+                            <div class="info-content">
+                                <h4>完成作文</h4>
+                                <p>生成完整作文大约消耗 <strong>5-10积分</strong></p>
+                            </div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-icon">🎁</div>
+                            <div class="info-content">
+                                <h4>新用户奖励</h4>
+                                <p>注册即送 <strong>10积分</strong></p>
+                            </div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-icon">💳</div>
+                            <div class="info-content">
+                                <h4>购买积分</h4>
+                                <p>联系网站所有者购买兑换码</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 消息提示 -->
+        <div class="message-container" id="messageContainer"></div>
+    </div>
+
+    <script src="js/profile.js"></script>
+</body>
+</html>

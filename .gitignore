@@ -1,0 +1,11 @@
+backend/.env
+backend/new_venv/
+backend/venv/
+backend/__pycache__/
+backend/little_writers.db
+backend/services/__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+node_modules/
+.vscode/
