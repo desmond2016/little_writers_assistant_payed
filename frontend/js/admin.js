@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalCredits = document.getElementById('totalCredits');
 
     // API URLs
-    const API_BASE_URL = 'http://127.0.0.1:5001/api';
+    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
     const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
     const GENERATE_CODE_URL = `${API_BASE_URL}/admin/generate-code`;
     const STATISTICS_URL = `${API_BASE_URL}/admin/statistics`;

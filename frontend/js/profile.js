@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabPanes = document.querySelectorAll('.tab-pane');
 
     // API URLs
-    const API_BASE_URL = 'http://127.0.0.1:5001/api';
+    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
     const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
     const REDEEM_URL = `${API_BASE_URL}/redeem`;
     const USAGE_HISTORY_URL = `${API_BASE_URL}/user/usage-history`;
