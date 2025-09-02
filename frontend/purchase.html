@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>购买积分 - 小小作家助手</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/profile.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-wrapper">
+        <header class="app-header">
+            <div class="header-controls">
+                <a href="index.html" class="back-btn">← 返回主页</a>
+            </div>
+            
+            <div class="header-center">
+                <img src="assets/images/mascot.svg" alt="小小作家助手吉祥物" class="mascot-icon">
+                <h1>购买积分</h1>
+                <p class="tagline">获取积分，享受更多服务</p>
+            </div>
+            
+            <div class="user-info" id="userInfo">
+                <!-- 用户信息将通过JavaScript动态加载 -->
+            </div>
+        </header>
+
+        <main class="profile-container">
+            <!-- 积分价格说明 -->
+            <div class="section-card">
+                <h3>💰 积分价格</h3>
+                <p class="section-description">按照1元=5积分的比例，以下是我们的积分套餐</p>
+                
+                <div class="price-grid">
+                    <div class="price-card">
+                        <div class="price-header">
+                            <h4>基础套餐</h4>
+                            <div class="price">¥5</div>
+                        </div>
+                        <div class="price-content">
+                            <div class="credits">25积分</div>
+                            <div class="description">适合轻度使用</div>
+                        </div>
+                    </div>
+                    
+                    <div class="price-card popular">
+                        <div class="price-header">
+                            <h4>推荐套餐</h4>
+                            <div class="price">¥10</div>
+                        </div>
+                        <div class="price-content">
+                            <div class="credits">50积分</div>
+                            <div class="description">最受欢迎的选择</div>
+                        </div>
+                    </div>
+                    
+                    <div class="price-card">
+                        <div class="price-header">
+                            <h4>标准套餐</h4>
+                            <div class="price">¥20</div>
+                        </div>
+                        <div class="price-content">
+                            <div class="credits">100积分</div>
+                            <div class="description">适合中度使用</div>
+                        </div>
+                    </div>
+                    
+                    <div class="price-card">
+                        <div class="price-header">
+                            <h4>超值套餐</h4>
+                            <div class="price">¥50</div>
+                        </div>
+                        <div class="price-content">
+                            <div class="credits">250积分</div>
+                            <div class="description">适合重度使用</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 购买方式 -->
+            <div class="section-card">
+                <h3>🛒 购买方式</h3>
+                <p class="section-description">目前支持以下购买方式</p>
+                
+                <div class="purchase-methods">
+                    <div class="method-card">
+                        <div class="method-icon">🎫</div>
+                        <h4>兑换码购买</h4>
+                        <p>联系管理员获取兑换码，然后在个人中心兑换积分</p>
+                        <button class="action-btn primary" onclick="goToRedeem()">去兑换</button>
+                    </div>
+                    
+                    <div class="method-card">
+                        <div class="method-icon">💬</div>
+                        <h4>联系客服</h4>
+                        <p>直接联系我们的客服人员，获取购买帮助</p>
+                        <button class="action-btn secondary" onclick="contactSupport()">联系客服</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 积分用途说明 -->
+            <div class="section-card">
+                <h3>📝 积分用途</h3>
+                <p class="section-description">了解积分的使用方式</p>
+                
+                <div class="usage-list">
+                    <div class="usage-item">
+                        <div class="usage-icon">💬</div>
+                        <div class="usage-info">
+                            <h4>AI对话</h4>
+                            <p>每次与AI助手对话消耗1积分</p>
+                        </div>
+                    </div>
+                    
+                    <div class="usage-item">
+                        <div class="usage-icon">📄</div>
+                        <div class="usage-info">
+                            <h4>作文生成</h4>
+                            <p>生成完整作文消耗5积分</p>
+                        </div>
+                    </div>
+                    
+                    <div class="usage-item">
+                        <div class="usage-icon">🔄</div>
+                        <div class="usage-info">
+                            <h4>无限制使用</h4>
+                            <p>积分充足时可无限制使用所有功能</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 常见问题 -->
+            <div class="section-card">
+                <h3>❓ 常见问题</h3>
+                
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <h4>Q: 积分有有效期吗？</h4>
+                        <p>A: 积分永久有效，不会过期。</p>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <h4>Q: 可以退款吗？</h4>
+                        <p>A: 由于积分的虚拟性质，一般情况下不支持退款。如有特殊情况请联系客服。</p>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <h4>Q: 如何查看积分余额？</h4>
+                        <p>A: 登录后在页面右上角可以看到当前积分余额，也可以在个人中心查看详细记录。</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/script.js"></script>
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!isLoggedIn()) {
+                window.location.href = 'auth.html';
+                return;
+            }
+
+            const user = await fetchUserProfile();
+            if (user) {
+                updateUserInfo(user);
+            }
+        });
+
+        // 去兑换页面
+        function goToRedeem() {
+            window.location.href = 'profile.html?action=redeem';
+        }
+
+        // 联系客服
+        function contactSupport() {
+            alert('请联系客服QQ: 123456789 或邮箱: support@example.com');
+        }
+    </script>
+</body>
+</html>

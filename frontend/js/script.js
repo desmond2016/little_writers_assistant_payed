@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rightSidebar = document.getElementById('rightSidebar');
     const mainContentArea = document.getElementById('mainContentArea');
 
-    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
+    const API_BASE_URL = 'http://127.0.0.1:5001/api';
     const CHAT_API_URL = `${API_BASE_URL}/chat`;
     const COMPLETE_ESSAY_API_URL = `${API_BASE_URL}/complete_essay`;
     const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
@@ -37,7 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return !!getAuthToken();
     }
 
-    function logout() {
+    function logout(event) {
+        if (event) {
+            event.preventDefault();
+            closeUserDropdown();
+        }
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_info');
         window.location.href = 'auth.html';
@@ -84,13 +88,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const userInitial = user.username.charAt(0).toUpperCase();
             userInfo.innerHTML = `
                 <div class="user-profile">
-                    <a href="profile.html" class="user-avatar" title="个人中心">${userInitial}</a>
-                    <div class="user-details">
-                        <div class="user-name">${user.username}</div>
-                        <div class="user-credits">积分: ${user.credits}</div>
+                    <div class="user-dropdown">
+                        <div class="user-trigger" onclick="toggleUserDropdown(event)">
+                            <div class="user-avatar">${userInitial}</div>
+                            <div class="user-info">
+                                <div class="user-name">${user.username}</div>
+                                <div class="user-credits">${user.credits}积分</div>
+                            </div>
+                            <span class="dropdown-arrow">▼</span>
+                        </div>
+
+                        <div class="dropdown-menu" id="userDropdownMenu">
+                            <a href="#" class="dropdown-item" onclick="showRedeemSection(event)">🎫 兑换积分</a>
+                            <a href="#" class="dropdown-item" onclick="showPurchaseInfo(event)">🛒 购买积分</a>
+                            <a href="#" class="dropdown-item" onclick="showUsageHistory(event)">📊 使用记录</a>
+                            <a href="#" class="dropdown-item" onclick="showChangePassword(event)">🔑 修改密码</a>
+                            <a href="#" class="dropdown-item" onclick="logout(event)">🚪 退出登录</a>
+                        </div>
                     </div>
                     <a href="admin.html" class="admin-btn" title="管理员后台">管理员</a>
-                    <button class="logout-btn" onclick="logout()">退出</button>
                 </div>
             `;
         }
@@ -115,8 +131,194 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     }
 
-    // 使logout函数全局可用
+    // 下拉菜单功能
+    function toggleUserDropdown(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const dropdown = document.querySelector('.user-dropdown');
+        if (dropdown) {
+            dropdown.classList.toggle('active');
+        }
+    }
+
+    function closeUserDropdown() {
+        const dropdown = document.querySelector('.user-dropdown');
+        if (dropdown) {
+            dropdown.classList.remove('active');
+        }
+    }
+
+    // 点击外部区域关闭下拉菜单
+    document.addEventListener('click', (event) => {
+        const dropdown = document.querySelector('.user-dropdown');
+        if (dropdown && !dropdown.contains(event.target)) {
+            closeUserDropdown();
+        }
+    });
+
+    // 兑换积分功能
+    function showRedeemSection(event) {
+        event.preventDefault();
+        closeUserDropdown();
+        window.location.href = 'profile.html?action=redeem';
+    }
+
+    // 购买积分功能
+    function showPurchaseInfo(event) {
+        event.preventDefault();
+        closeUserDropdown();
+        window.location.href = 'purchase.html';
+    }
+
+    // 使用记录功能
+    function showUsageHistory(event) {
+        event.preventDefault();
+        closeUserDropdown();
+        window.location.href = 'profile.html?action=history';
+    }
+
+    // 修改密码功能
+    function showChangePassword(event) {
+        event.preventDefault();
+        closeUserDropdown();
+        showPasswordChangeModal();
+    }
+
+    // 密码修改模态框
+    function showPasswordChangeModal() {
+        const modalHTML = `
+            <div class="modal" id="passwordModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>修改密码</h2>
+                        <button class="close-button" onclick="closePasswordModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="passwordChangeForm">
+                            <div class="form-group">
+                                <label for="currentPasswordInput">当前密码</label>
+                                <input type="password" id="currentPasswordInput" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newPasswordInput">新密码</label>
+                                <input type="password" id="newPasswordInput" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmPasswordInput">确认新密码</label>
+                                <input type="password" id="confirmPasswordInput" required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="action-button" onclick="closePasswordModal()">取消</button>
+                        <button type="button" class="action-button" onclick="submitPasswordChange()">确认修改</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.getElementById('passwordModal').style.display = 'block';
+    }
+
+    function closePasswordModal() {
+        const modal = document.getElementById('passwordModal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    async function submitPasswordChange() {
+        const currentPassword = document.getElementById('currentPasswordInput').value;
+        const newPassword = document.getElementById('newPasswordInput').value;
+        const confirmPassword = document.getElementById('confirmPasswordInput').value;
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            showMessage('请填写所有字段', 'error');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showMessage('新密码和确认密码不匹配', 'error');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            showMessage('新密码至少需要6位', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/user/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password: newPassword
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showMessage('密码修改成功', 'success');
+                closePasswordModal();
+            } else {
+                showMessage(result.error || '密码修改失败', 'error');
+            }
+        } catch (error) {
+            console.error('密码修改失败:', error);
+            showMessage('网络错误，请稍后重试', 'error');
+        }
+    }
+
+    // 消息提示功能
+    function showMessage(message, type = 'info') {
+        const messageContainer = document.getElementById('messageContainer') || createMessageContainer();
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        messageDiv.textContent = message;
+
+        messageContainer.appendChild(messageDiv);
+
+        // 3秒后自动移除消息
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.parentNode.removeChild(messageDiv);
+            }
+        }, 3000);
+    }
+
+    function createMessageContainer() {
+        const container = document.createElement('div');
+        container.id = 'messageContainer';
+        container.className = 'message-container';
+        container.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        `;
+        document.body.appendChild(container);
+        return container;
+    }
+
+    // 使函数全局可用
     window.logout = logout;
+    window.toggleUserDropdown = toggleUserDropdown;
+    window.showRedeemSection = showRedeemSection;
+    window.showPurchaseInfo = showPurchaseInfo;
+    window.showUsageHistory = showUsageHistory;
+    window.showChangePassword = showChangePassword;
+    window.closePasswordModal = closePasswordModal;
+    window.submitPasswordChange = submitPasswordChange;
+    window.showMessage = showMessage;
 
     // --- 侧边栏折叠功能 ---
     function toggleSidebars() {

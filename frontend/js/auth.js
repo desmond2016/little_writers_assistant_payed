@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageContainer = document.getElementById('messageContainer');
 
     // API URLs
-    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
+    const API_BASE_URL = 'http://127.0.0.1:5001/api';
     const LOGIN_URL = `${API_BASE_URL}/login`;
     const REGISTER_URL = `${API_BASE_URL}/register`;
 

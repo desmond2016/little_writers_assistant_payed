@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabPanes = document.querySelectorAll('.tab-pane');
 
     // API URLs
-    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
+    const API_BASE_URL = 'http://127.0.0.1:5001/api';
     const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
     const REDEEM_URL = `${API_BASE_URL}/redeem`;
     const USAGE_HISTORY_URL = `${API_BASE_URL}/user/usage-history`;
@@ -358,6 +358,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateUserInfo(user);
+
+        // 检查URL参数，自动打开相应功能
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+
+        if (action === 'redeem') {
+            redeemSection.style.display = 'block';
+            redeemCode.focus();
+        } else if (action === 'history') {
+            historySection.style.display = 'block';
+
+            // 加载使用记录
+            usageHistory.innerHTML = '<div class="loading">加载中...</div>';
+            const usage = await fetchUsageHistory();
+            renderUsageHistory(usage);
+
+            // 加载兑换记录
+            redemptionHistory.innerHTML = '<div class="loading">加载中...</div>';
+            const redemption = await fetchRedemptionHistory();
+            renderRedemptionHistory(redemption);
+        }
     }
 
     initialize();

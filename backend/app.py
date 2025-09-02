@@ -428,6 +428,45 @@ def admin_change_password():
         app.logger.error(f"修改密码失败: {e}")
         return jsonify({"error": "服务器内部错误"}), 500
 
+@app.route('/api/user/change-password', methods=['POST'])
+@jwt_required()
+def user_change_password():
+    """用户修改密码"""
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"error": "用户不存在"}), 404
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "请求体不能为空"}), 400
+
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+
+        if not all([current_password, new_password]):
+            return jsonify({"error": "当前密码和新密码都是必填项"}), 400
+
+        # 验证当前密码
+        if not current_user.check_password(current_password):
+            return jsonify({"error": "当前密码错误"}), 400
+
+        # 验证新密码格式
+        from services.auth_service import validate_password
+        if not validate_password(new_password):
+            return jsonify({"error": "新密码至少6位，且包含字母和数字"}), 400
+
+        # 更新密码
+        current_user.set_password(new_password)
+        db.session.commit()
+
+        return jsonify({"message": "密码修改成功"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"用户修改密码失败: {e}")
+        return jsonify({"error": "服务器内部错误"}), 500
+
 @app.route('/api/chat', methods=['POST'])
 @jwt_required()  # 添加JWT保护
 def chat_handler():

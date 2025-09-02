@@ -175,6 +175,121 @@ body {
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
+/* 用户下拉菜单 */
+.user-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.user-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 12px;
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.user-trigger:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.user-trigger .user-avatar {
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.user-trigger .user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+}
+
+.user-trigger .user-name {
+    font-size: 12px;
+    font-weight: 500;
+    margin: 0;
+}
+
+.user-trigger .user-credits {
+    font-size: 10px;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.dropdown-arrow {
+    font-size: 10px;
+    transition: transform 0.3s ease;
+}
+
+.user-dropdown.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    min-width: 160px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.user-dropdown.active .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    display: block;
+    padding: 12px 16px;
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    margin: 4px 8px;
+}
+
+.dropdown-item:first-child {
+    margin-top: 8px;
+}
+
+.dropdown-item:last-child {
+    margin-bottom: 8px;
+}
+
+.dropdown-item:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateX(4px);
+}
+
 .logout-btn {
     background: none;
     border: none;
@@ -636,6 +751,36 @@ body {
     .sidebar .sidebar-content {
         display: none;
     }
+
+    /* 用户下拉菜单响应式 */
+    .user-trigger {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    .user-trigger .user-avatar {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
+
+    .user-trigger .user-name {
+        font-size: 11px;
+    }
+
+    .user-trigger .user-credits {
+        font-size: 9px;
+    }
+
+    .dropdown-menu {
+        min-width: 140px;
+        right: -10px;
+    }
+
+    .dropdown-item {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
 }
 
 /* 模态弹出窗口样式 */
@@ -739,6 +884,73 @@ body {
     padding: 10px 25px;
     font-size: 1em;
 }
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* 消息提示样式 */
+.message-container .message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    animation: slideInMessage 0.3s ease;
+}
+
+.message-container .message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message-container .message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.message-container .message.info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+@keyframes slideInMessage {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
 @media (max-width: 600px) {
     body {
         font-size: 14px;
@@ -759,6 +971,77 @@ body {
     .chat-input-area button { padding: 0 15px; min-height: 40px;}
 
     .action-button { padding: 10px 25px; font-size: 1em; }
+
+    /* 移动端用户下拉菜单优化 */
+    .user-profile {
+        gap: 6px;
+    }
+
+    .user-trigger {
+        padding: 3px 6px;
+        font-size: 10px;
+        border-radius: 12px;
+    }
+
+    .user-trigger .user-avatar {
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+    }
+
+    .user-trigger .user-info {
+        display: none; /* 在很小的屏幕上隐藏用户信息文字 */
+    }
+
+    .dropdown-arrow {
+        font-size: 8px;
+    }
+
+    .dropdown-menu {
+        min-width: 120px;
+        right: -20px;
+        border-radius: 8px;
+    }
+
+    .dropdown-item {
+        padding: 8px 10px;
+        font-size: 12px;
+        margin: 2px 4px;
+        border-radius: 6px;
+    }
+
+    .user-profile .admin-btn {
+        padding: 3px 6px;
+        font-size: 10px;
+        border-radius: 12px;
+        margin-right: 4px;
+    }
+
+    /* 密码修改模态框移动端优化 */
+    .modal-content {
+        width: 95%;
+        margin: 20px auto;
+        max-height: calc(100vh - 40px);
+    }
+
+    .modal-header {
+        padding: 12px 16px;
+    }
+
+    .modal-body {
+        padding: 16px;
+    }
+
+    .modal-footer {
+        padding: 12px 16px;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-footer .action-button {
+        width: 100%;
+        margin: 0;
+    }
 }
 
 /* AI输入提示动画 (来自script.js) */
