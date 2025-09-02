@@ -159,28 +159,35 @@ def get_usage_statistics():
     返回: (success: bool, message: str, stats: dict or None)
     """
     try:
+        from models import User
+
+        # 用户统计
+        total_users = User.query.count()
+
+        # 兑换码统计
         total_codes = RedemptionCode.query.count()
         used_codes = RedemptionCode.query.filter_by(is_used=True).count()
         expired_codes = RedemptionCode.query.filter(
             RedemptionCode.expires_at < datetime.utcnow(),
             RedemptionCode.is_used == False
         ).count()
-        
+
         total_credits_issued = db.session.query(
             db.func.sum(RedemptionCode.credits_value)
         ).filter_by(is_used=True).scalar() or 0
-        
+
         stats = {
+            'total_users': total_users,
             'total_codes': total_codes,
             'used_codes': used_codes,
             'unused_codes': total_codes - used_codes,
             'expired_codes': expired_codes,
-            'total_credits_issued': total_credits_issued,
+            'total_credits': total_credits_issued,
             'usage_rate': round((used_codes / total_codes * 100), 2) if total_codes > 0 else 0
         }
-        
+
         return True, "获取统计成功", stats
-        
+
     except Exception as e:
         current_app.logger.error(f"获取使用统计失败: {e}")
         return False, "获取使用统计失败", None

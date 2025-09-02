@@ -49,11 +49,11 @@ def create_admin_user(app):
 def create_sample_codes(app):
     """创建一些示例兑换码"""
     with app.app_context():
-        # 创建不同价值的兑换码
+        # 创建不同价值的兑换码 (按照1元=5积分的比例)
         sample_codes = [
-            {'credits': 50, 'expires_days': 30},
-            {'credits': 100, 'expires_days': 60},
-            {'credits': 200, 'expires_days': 90}
+            {'credits': 25, 'expires_days': 30},   # 5元
+            {'credits': 50, 'expires_days': 60},   # 10元
+            {'credits': 100, 'expires_days': 90}   # 20元
         ]
         
         for code_info in sample_codes:

@@ -12,18 +12,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const quickBtns = document.querySelectorAll('.quick-btn');
     
     // 统计元素
+    const totalUsers = document.getElementById('totalUsers');
     const totalCodes = document.getElementById('totalCodes');
     const usedCodes = document.getElementById('usedCodes');
-    const unusedCodes = document.getElementById('unusedCodes');
     const totalCredits = document.getElementById('totalCredits');
+
+    // 新功能元素
+    const passwordForm = document.getElementById('passwordForm');
+    const userSearch = document.getElementById('userSearch');
+    const searchBtn = document.getElementById('searchBtn');
+    const userTableBody = document.getElementById('userTableBody');
+    const pagination = document.getElementById('pagination');
 
     // API URLs
     const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
     const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
     const GENERATE_CODE_URL = `${API_BASE_URL}/admin/generate-code`;
     const STATISTICS_URL = `${API_BASE_URL}/admin/statistics`;
+    const USERS_URL = `${API_BASE_URL}/admin/users`;
+    const CHANGE_PASSWORD_URL = `${API_BASE_URL}/admin/change-password`;
 
     let currentUser = null;
+    let currentPage = 1;
+    let currentSearch = '';
 
     // 工具函数
     function getAuthToken() {
@@ -182,21 +193,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateStatistics(stats) {
         if (!stats) return;
-        
-        totalCodes.textContent = stats.total_codes || 0;
-        usedCodes.textContent = stats.used_codes || 0;
-        unusedCodes.textContent = stats.unused_codes || 0;
-        totalCredits.textContent = stats.total_credits_issued || 0;
+
+        if (totalUsers) totalUsers.textContent = stats.total_users || 0;
+        if (totalCodes) totalCodes.textContent = stats.total_codes || 0;
+        if (usedCodes) usedCodes.textContent = stats.used_codes || 0;
+        if (totalCredits) totalCredits.textContent = stats.total_credits_issued || 0;
     }
 
     function showGenerateResult(codeData) {
-        generatedCode.value = codeData.code;
-        codeCredits.textContent = codeData.credits_value;
-        codeExpires.textContent = formatDate(codeData.expires_at);
-        generateResult.style.display = 'block';
-        
-        // 滚动到结果区域
-        generateResult.scrollIntoView({ behavior: 'smooth' });
+        if (generatedCode) generatedCode.value = codeData.code;
+        if (codeCredits) codeCredits.textContent = codeData.credits_value;
+        if (codeExpires) codeExpires.textContent = formatDate(codeData.expires_at);
+        if (generateResult) {
+            generateResult.classList.remove('hidden');
+            // 滚动到结果区域
+            generateResult.scrollIntoView({ behavior: 'smooth' });
+        }
     }
 
     // 事件处理函数
@@ -278,10 +290,202 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = false;
             // 恢复按钮原始文本
             const credits = btn.dataset.credits;
-            const priceMap = {'50': '5元', '100': '10元', '200': '20元', '500': '50元'};
+            const priceMap = {'25': '5元', '50': '10元', '100': '20元', '250': '50元'};
             btn.textContent = `${credits}积分 (${priceMap[credits] || credits + '元'})`;
         });
     });
+
+    // 密码修改功能
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+
+            if (!currentPassword || !newPassword) {
+                showMessage('请填写所有字段', 'error');
+                return;
+            }
+
+            const submitBtn = passwordForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '修改中...';
+
+            try {
+                const response = await fetch(CHANGE_PASSWORD_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('密码修改成功', 'success');
+                    passwordForm.reset();
+                } else {
+                    showMessage(result.error || '密码修改失败', 'error');
+                }
+            } catch (error) {
+                console.error('密码修改失败:', error);
+                showMessage('网络错误，请稍后重试', 'error');
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = '修改密码';
+        });
+    }
+
+    // 用户管理功能
+    async function fetchUsers(page = 1, search = '') {
+        try {
+            const params = new URLSearchParams({
+                page: page,
+                per_page: 10
+            });
+
+            if (search) {
+                params.append('search', search);
+            }
+
+            const response = await fetch(`${USERS_URL}?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                }
+            });
+
+            if (response.ok) {
+                return await response.json();
+            } else {
+                const error = await response.json();
+                showMessage(error.error || '获取用户列表失败', 'error');
+                return null;
+            }
+        } catch (error) {
+            console.error('获取用户列表失败:', error);
+            showMessage('网络错误，请稍后重试', 'error');
+            return null;
+        }
+    }
+
+    function renderUsers(data) {
+        if (!data || !userTableBody) return;
+
+        userTableBody.innerHTML = '';
+
+        data.users.forEach(user => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.username}</td>
+                <td>${user.email}</td>
+                <td>${user.credits}</td>
+                <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                <td>
+                    <div class="user-actions">
+                        <button type="button" class="edit-btn" onclick="editUser('${user.user_id}', ${user.credits})">编辑积分</button>
+                    </div>
+                </td>
+            `;
+            userTableBody.appendChild(row);
+        });
+
+        renderPagination(data.pagination);
+    }
+
+    function renderPagination(paginationData) {
+        if (!pagination) return;
+
+        pagination.innerHTML = '';
+
+        // 上一页按钮
+        const prevBtn = document.createElement('button');
+        prevBtn.textContent = '上一页';
+        prevBtn.disabled = !paginationData.has_prev;
+        prevBtn.onclick = () => loadUsers(currentPage - 1, currentSearch);
+        pagination.appendChild(prevBtn);
+
+        // 页码信息
+        const pageInfo = document.createElement('span');
+        pageInfo.textContent = `第 ${paginationData.page} 页，共 ${paginationData.pages} 页`;
+        pagination.appendChild(pageInfo);
+
+        // 下一页按钮
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = '下一页';
+        nextBtn.disabled = !paginationData.has_next;
+        nextBtn.onclick = () => loadUsers(currentPage + 1, currentSearch);
+        pagination.appendChild(nextBtn);
+    }
+
+    async function loadUsers(page = 1, search = '') {
+        currentPage = page;
+        currentSearch = search;
+
+        const data = await fetchUsers(page, search);
+        if (data) {
+            renderUsers(data);
+        }
+    }
+
+    // 搜索功能
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            const search = userSearch.value.trim();
+            loadUsers(1, search);
+        });
+    }
+
+    if (userSearch) {
+        userSearch.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const search = userSearch.value.trim();
+                loadUsers(1, search);
+            }
+        });
+    }
+
+    // 编辑用户函数（全局）
+    window.editUser = async function(userId, currentCredits) {
+        const newCredits = prompt(`请输入新的积分值（当前：${currentCredits}）:`, currentCredits);
+
+        if (newCredits === null) return;
+
+        const credits = parseInt(newCredits);
+        if (isNaN(credits) || credits < 0) {
+            showMessage('请输入有效的积分值', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${USERS_URL}/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: JSON.stringify({ credits: credits })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showMessage('用户积分更新成功', 'success');
+                loadUsers(currentPage, currentSearch);
+            } else {
+                showMessage(result.error || '更新失败', 'error');
+            }
+        } catch (error) {
+            console.error('更新用户失败:', error);
+            showMessage('网络错误，请稍后重试', 'error');
+        }
+    };
 
     // 使logout函数全局可用
     window.logout = logout;
@@ -300,10 +504,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateUserInfo(user);
-        
+
         // 加载统计信息
         const stats = await fetchStatistics();
         updateStatistics(stats);
+
+        // 加载用户列表
+        loadUsers();
     }
 
     initialize();

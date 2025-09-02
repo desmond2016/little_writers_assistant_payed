@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="auth-buttons">
                     <a href="auth.html" class="auth-btn">登录</a>
                     <a href="auth.html" class="auth-btn primary">注册</a>
+                    <a href="admin.html" class="auth-btn admin-btn">管理员</a>
                 </div>
             `;
         } else {
@@ -88,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="user-name">${user.username}</div>
                         <div class="user-credits">积分: ${user.credits}</div>
                     </div>
+                    <a href="admin.html" class="admin-btn" title="管理员后台">管理员</a>
                     <button class="logout-btn" onclick="logout()">退出</button>
                 </div>
             `;

@@ -296,6 +296,138 @@ def admin_get_statistics():
         app.logger.error(f"获取统计信息失败: {e}")
         return jsonify({"error": "服务器内部错误"}), 500
 
+@app.route('/api/admin/users', methods=['GET'])
+@jwt_required()
+def admin_get_users():
+    """管理员获取用户列表"""
+    try:
+        current_user = get_current_user()
+        if not is_admin_user(current_user):
+            return jsonify({"error": "权限不足"}), 403
+
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        search = request.args.get('search', '', type=str)
+
+        from models import User
+        query = User.query
+
+        # 搜索功能
+        if search:
+            query = query.filter(
+                (User.username.contains(search)) |
+                (User.email.contains(search))
+            )
+
+        # 分页
+        users = query.order_by(User.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+        return jsonify({
+            "message": "获取成功",
+            "users": [user.to_dict() for user in users.items],
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": users.total,
+                "pages": users.pages,
+                "has_next": users.has_next,
+                "has_prev": users.has_prev
+            }
+        }), 200
+
+    except Exception as e:
+        app.logger.error(f"获取用户列表失败: {e}")
+        return jsonify({"error": "服务器内部错误"}), 500
+
+@app.route('/api/admin/users/<user_id>', methods=['PUT'])
+@jwt_required()
+def admin_update_user(user_id):
+    """管理员修改用户信息"""
+    try:
+        current_user = get_current_user()
+        if not is_admin_user(current_user):
+            return jsonify({"error": "权限不足"}), 403
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "请求体不能为空"}), 400
+
+        from models import User
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"error": "用户不存在"}), 404
+
+        # 更新积分
+        if 'credits' in data:
+            credits = data.get('credits')
+            if isinstance(credits, int) and credits >= 0:
+                user.credits = credits
+            else:
+                return jsonify({"error": "积分值必须为非负整数"}), 400
+
+        # 更新邮箱
+        if 'email' in data:
+            email = data.get('email')
+            if email and email != user.email:
+                # 检查邮箱是否已被其他用户使用
+                existing_user = User.query.filter_by(email=email).first()
+                if existing_user and existing_user.user_id != user_id:
+                    return jsonify({"error": "邮箱已被其他用户使用"}), 400
+                user.email = email
+
+        db.session.commit()
+
+        return jsonify({
+            "message": "用户信息更新成功",
+            "user": user.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"更新用户信息失败: {e}")
+        return jsonify({"error": "服务器内部错误"}), 500
+
+@app.route('/api/admin/change-password', methods=['POST'])
+@jwt_required()
+def admin_change_password():
+    """管理员修改密码"""
+    try:
+        current_user = get_current_user()
+        if not is_admin_user(current_user):
+            return jsonify({"error": "权限不足"}), 403
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "请求体不能为空"}), 400
+
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+
+        if not all([current_password, new_password]):
+            return jsonify({"error": "当前密码和新密码都是必填项"}), 400
+
+        # 验证当前密码
+        if not current_user.check_password(current_password):
+            return jsonify({"error": "当前密码错误"}), 400
+
+        # 验证新密码格式
+        from services.auth_service import validate_password
+        if not validate_password(new_password):
+            return jsonify({"error": "新密码至少6位，且包含字母和数字"}), 400
+
+        # 更新密码
+        current_user.set_password(new_password)
+        db.session.commit()
+
+        return jsonify({"message": "密码修改成功"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"修改密码失败: {e}")
+        return jsonify({"error": "服务器内部错误"}), 500
+
 @app.route('/api/chat', methods=['POST'])
 @jwt_required()  # 添加JWT保护
 def chat_handler():

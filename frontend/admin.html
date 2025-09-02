@@ -27,37 +27,24 @@
         </header>
 
         <main class="admin-container">
-            <!-- 统计概览 -->
+            <!-- 系统统计 -->
             <div class="stats-section">
-                <h2>系统统计</h2>
-                <div class="stats-grid" id="statsGrid">
-                    <div class="stat-card">
-                        <div class="stat-icon">📊</div>
-                        <div class="stat-info">
-                            <div class="stat-value" id="totalCodes">-</div>
-                            <div class="stat-label">总兑换码数</div>
+                <div class="section-card">
+                    <h3>📊 系统统计</h3>
+                    <div class="stats-grid" id="statsGrid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalUsers">-</div>
+                            <div class="stat-label">总用户数</div>
                         </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">✅</div>
-                        <div class="stat-info">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalCodes">-</div>
+                            <div class="stat-label">总兑换码</div>
+                        </div>
+                        <div class="stat-item">
                             <div class="stat-value" id="usedCodes">-</div>
                             <div class="stat-label">已使用</div>
                         </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">⏳</div>
-                        <div class="stat-info">
-                            <div class="stat-value" id="unusedCodes">-</div>
-                            <div class="stat-label">未使用</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">💰</div>
-                        <div class="stat-info">
+                        <div class="stat-item">
                             <div class="stat-value" id="totalCredits">-</div>
                             <div class="stat-label">已发放积分</div>
                         </div>
@@ -90,10 +77,10 @@
                     </form>
                     
                     <!-- 生成结果 -->
-                    <div class="generate-result" id="generateResult" style="display: none;">
+                    <div class="generate-result hidden" id="generateResult">
                         <h4>兑换码生成成功！</h4>
                         <div class="code-display">
-                            <input type="text" id="generatedCode" readonly>
+                            <input type="text" id="generatedCode" readonly title="生成的兑换码">
                             <button type="button" class="copy-btn" id="copyBtn">复制</button>
                         </div>
                         <div class="code-info">
@@ -104,48 +91,82 @@
                 </div>
             </div>
 
-            <!-- 积分价值 -->
+            <!-- 快速生成兑换码 -->
             <div class="quick-generate-section">
                 <div class="section-card">
-                    <h3>积分价值</h3>
+                    <h3>⚡ 快速生成兑换码</h3>
                     <p class="section-description">常用积分值的快速生成</p>
 
                     <div class="quick-buttons">
-                        <button class="quick-btn" data-credits="50" data-days="30">50积分 (5元)</button>
-                        <button class="quick-btn" data-credits="100" data-days="60">100积分 (10元)</button>
-                        <button class="quick-btn" data-credits="200" data-days="90">200积分 (20元)</button>
-                        <button class="quick-btn" data-credits="500" data-days="180">500积分 (50元)</button>
+                        <button type="button" class="quick-btn" data-credits="25" data-days="30">25积分 (5元)</button>
+                        <button type="button" class="quick-btn" data-credits="50" data-days="60">50积分 (10元)</button>
+                        <button type="button" class="quick-btn" data-credits="100" data-days="90">100积分 (20元)</button>
+                        <button type="button" class="quick-btn" data-credits="250" data-days="180">250积分 (50元)</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 使用说明 -->
-            <div class="info-section">
+            <!-- 修改管理员密码 -->
+            <div class="password-section">
                 <div class="section-card">
-                    <h3>使用说明</h3>
-                    <div class="info-list">
-                        <div class="info-item">
-                            <strong>1. 生成兑换码：</strong>
-                            <p>设置积分价值和有效期，点击生成按钮创建兑换码。</p>
+                    <h3>🔐 修改管理员密码</h3>
+                    <p class="section-description">修改当前管理员账户密码</p>
+
+                    <form id="passwordForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="currentPassword">当前密码</label>
+                                <input type="password" id="currentPassword" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="newPassword">新密码</label>
+                                <input type="password" id="newPassword" required>
+                            </div>
                         </div>
-                        
-                        <div class="info-item">
-                            <strong>2. 分发兑换码：</strong>
-                            <p>将生成的兑换码发送给付费用户，用户可在个人中心兑换积分。</p>
+
+                        <div class="form-actions">
+                            <button type="submit" class="action-btn primary">修改密码</button>
                         </div>
-                        
-                        <div class="info-item">
-                            <strong>3. 积分消耗：</strong>
-                            <p>每次聊天对话消耗1积分。</p>
-                        </div>
-                        
-                        <div class="info-item">
-                            <strong>4. 有效期管理：</strong>
-                            <p>可设置兑换码有效期，过期后无法使用。留空表示永不过期。</p>
-                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 用户管理 -->
+            <div class="user-management-section">
+                <div class="section-card">
+                    <h3>👥 用户管理</h3>
+                    <p class="section-description">管理系统用户信息</p>
+
+                    <div class="user-search">
+                        <input type="text" id="userSearch" placeholder="搜索用户名或邮箱...">
+                        <button type="button" class="action-btn primary" id="searchBtn">🔍 搜索</button>
+                    </div>
+
+                    <div class="user-table-container">
+                        <table class="user-table" id="userTable">
+                            <thead>
+                                <tr>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>积分</th>
+                                    <th>注册时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTableBody">
+                                <!-- 用户数据将通过JavaScript动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination" id="pagination">
+                        <!-- 分页控件将通过JavaScript动态生成 -->
                     </div>
                 </div>
             </div>
+
+
         </main>
 
         <!-- 消息提示 -->
