@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function logout() {
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_info');
-        window.location.href = 'auth.html';
+        window.location.href = 'admin-login.html';
     }
 
     function showMessage(message, type = 'info') {
@@ -490,16 +490,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // 使logout函数全局可用
     window.logout = logout;
 
+    // 检查是否为管理员用户
+    function isAdminUser(userData) {
+        return userData && userData.username === 'admin';
+    }
+
     // 初始化
     async function initialize() {
         if (!isLoggedIn()) {
-            window.location.href = 'auth.html';
+            window.location.href = 'admin-login.html';
             return;
         }
 
         const user = await fetchUserProfile();
         if (!user) {
-            window.location.href = 'auth.html';
+            window.location.href = 'admin-login.html';
+            return;
+        }
+
+        // 检查是否为管理员
+        if (!isAdminUser(user)) {
+            showMessage('权限不足，只有管理员可以访问此页面', 'error');
+            setTimeout(() => {
+                window.location.href = 'admin-login.html';
+            }, 2000);
             return;
         }
 
