@@ -96,8 +96,19 @@ def missing_token_callback(error):
 
 # 辅助函数
 def is_admin_user(user):
-    """检查用户是否为管理员"""
-    return user and user.username == 'admin'
+    """检查用户是否为管理员 - 支持SQLite和Supabase格式"""
+    if not user:
+        return False
+
+    # SQLite格式 (User对象)
+    if hasattr(user, 'username'):
+        return user.username == 'admin'
+
+    # Supabase格式 (字典)
+    if isinstance(user, dict):
+        return user.get('username') == 'admin'
+
+    return False
 
 def validate_input_length(text, max_length=1000):
     """验证输入长度"""
@@ -328,7 +339,7 @@ def get_credits():
 def admin_generate_code():
     """管理员生成兑换码"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_unified()
         if not is_admin_user(current_user):
             return jsonify({"error": "权限不足"}), 403
 
@@ -363,7 +374,7 @@ def admin_generate_code():
 def admin_get_statistics():
     """管理员获取使用统计"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_unified()
         if not is_admin_user(current_user):
             return jsonify({"error": "权限不足"}), 403
 
@@ -386,7 +397,7 @@ def admin_get_statistics():
 def admin_get_users():
     """管理员获取用户列表"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_unified()
         if not is_admin_user(current_user):
             return jsonify({"error": "权限不足"}), 403
 
@@ -394,33 +405,71 @@ def admin_get_users():
         per_page = request.args.get('per_page', 10, type=int)
         search = request.args.get('search', '', type=str)
 
-        from models import User
-        query = User.query
+        if USE_SUPABASE:
+            # Supabase实现
+            from services.supabase_client import SupabaseClient
+            supabase = SupabaseClient()
 
-        # 搜索功能
-        if search:
-            query = query.filter(
-                (User.username.contains(search)) |
-                (User.email.contains(search))
+            # 构建查询参数
+            params = {
+                'order': 'created_at.desc',
+                'limit': per_page,
+                'offset': (page - 1) * per_page
+            }
+
+            # 搜索功能
+            if search:
+                params['or'] = f'username.ilike.%{search}%,email.ilike.%{search}%'
+
+            success, users_data = supabase._make_request('GET', 'users', params=params)
+
+            if success:
+                # 获取总数 - 简化实现
+                total = len(users_data) if users_data else 0
+
+                return jsonify({
+                    "message": "获取成功",
+                    "users": users_data,
+                    "pagination": {
+                        "page": page,
+                        "per_page": per_page,
+                        "total": total,
+                        "pages": max(1, (total + per_page - 1) // per_page),
+                        "has_next": len(users_data) == per_page,
+                        "has_prev": page > 1
+                    }
+                }), 200
+            else:
+                return jsonify({"error": "获取用户列表失败"}), 500
+        else:
+            # SQLite实现
+            from models import User
+            query = User.query
+
+            # 搜索功能
+            if search:
+                query = query.filter(
+                    (User.username.contains(search)) |
+                    (User.email.contains(search))
+                )
+
+            # 分页
+            users = query.order_by(User.created_at.desc()).paginate(
+                page=page, per_page=per_page, error_out=False
             )
 
-        # 分页
-        users = query.order_by(User.created_at.desc()).paginate(
-            page=page, per_page=per_page, error_out=False
-        )
-
-        return jsonify({
-            "message": "获取成功",
-            "users": [user.to_dict() for user in users.items],
-            "pagination": {
-                "page": page,
-                "per_page": per_page,
-                "total": users.total,
-                "pages": users.pages,
-                "has_next": users.has_next,
-                "has_prev": users.has_prev
-            }
-        }), 200
+            return jsonify({
+                "message": "获取成功",
+                "users": [user.to_dict() for user in users.items],
+                "pagination": {
+                    "page": page,
+                    "per_page": per_page,
+                    "total": users.total,
+                    "pages": users.pages,
+                    "has_next": users.has_next,
+                    "has_prev": users.has_prev
+                }
+            }), 200
 
     except Exception as e:
         app.logger.error(f"获取用户列表失败: {e}")
@@ -431,7 +480,7 @@ def admin_get_users():
 def admin_update_user(user_id):
     """管理员更新用户信息"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_unified()
         if not is_admin_user(current_user):
             return jsonify({"error": "权限不足"}), 403
 

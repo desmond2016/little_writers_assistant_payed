@@ -24,8 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const userTableBody = document.getElementById('userTableBody');
     const pagination = document.getElementById('pagination');
 
-    // API URLs
-    const API_BASE_URL = 'http://127.0.0.1:5001/api';
+    // API URLs - 使用配置文件中的API地址
+    const API_BASE_URL = CONFIG.API.BASE_URL;
     const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
     const GENERATE_CODE_URL = `${API_BASE_URL}/admin/generate-code`;
     const STATISTICS_URL = `${API_BASE_URL}/admin/statistics`;
