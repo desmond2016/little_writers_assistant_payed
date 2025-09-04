@@ -289,9 +289,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             btn.disabled = false;
             // 恢复按钮原始文本
-            const credits = btn.dataset.credits;
+            const creditsText = btn.dataset.credits;
             const priceMap = {'25': '5元', '50': '10元', '100': '20元', '250': '50元'};
-            btn.textContent = `${credits}积分 (${priceMap[credits] || credits + '元'})`;
+            btn.textContent = `${creditsText}积分 (${priceMap[creditsText] || creditsText + '元'})`;
         });
     });
 
