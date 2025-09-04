@@ -133,23 +133,34 @@
             <button type="button" id="completeEssayButton" class="action-button">帮我完成作文</button>
         </footer>
     </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="js/script.js"></script>
-</body>
-</html>
-<div id="essayModal" class="modal">
+
+    <!-- 模态框 -->
+    <div id="essayModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>AI生成的作文</h2>
                 <button type="button" id="closeModalButton" class="close-button">&times;</button>
             </div>
             <div class="modal-body" id="completedEssayBody">
-                </div>
+            </div>
             <div class="modal-footer">
                 <button type="button" id="downloadPdfButton" class="action-button">下载PDF</button>
             </div>
         </div>
     </div>
+
+    <!-- 外部库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- 配置脚本 -->
+    <script src="js/config.js"></script>
+
+    <!-- 优化工具脚本 -->
+    <script src="js/cache.js"></script>
+    <script src="js/api-utils.js"></script>
+
+    <!-- 核心应用脚本 -->
+    <script src="js/script.js"></script>
 </body>
 </html>

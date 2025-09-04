@@ -1,0 +1,71 @@
+# render.yaml - Render部署配置
+services:
+  # 后端API服务
+  - type: web
+    name: little-writers-backend
+    env: python
+    buildCommand: |
+      cd backend
+      pip install -r requirements_production.txt
+    startCommand: |
+      cd backend
+      gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 100 app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DEBUG
+        value: false
+      - key: USE_SUPABASE
+        value: true
+      - key: PYTHONUNBUFFERED
+        value: 1
+      - key: PYTHONDONTWRITEBYTECODE
+        value: 1
+      - key: WEB_CONCURRENCY
+        value: 2
+      - key: MAX_WORKERS
+        value: 2
+      - key: TIMEOUT
+        value: 30
+      - key: KEEP_ALIVE
+        value: 2
+      # 以下环境变量需要在Render控制台中设置
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: CLAUDE_API_KEY
+        sync: false
+      - key: CLAUDE_API_HOST
+        sync: false
+    
+  # 前端静态网站
+  - type: static
+    name: little-writers-frontend
+    staticPublishPath: ./frontend
+    buildCommand: |
+      # 前端构建命令（如果需要）
+      echo "前端静态文件准备完成"
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=86400
+      - path: /js/*
+        name: Cache-Control
+        value: public, max-age=31536000
+      - path: /css/*
+        name: Cache-Control
+        value: public, max-age=31536000
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

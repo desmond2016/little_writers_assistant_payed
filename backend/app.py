@@ -1,13 +1,44 @@
+def get_current_user_unified():
+    """统一的用户获取函数，支持SQLite和Supabase"""
+    if USE_SUPABASE:
+        return get_current_user_supabase()
+    else:
+        return get_current_user()
+
+def get_user_credits_unified(user):
+    """统一的积分获取函数"""
+    if USE_SUPABASE:
+        return user.get('credits', 0) if user else 0
+    else:
+        return user.credits if user else 0
+
+def get_user_id_unified(user):
+    """统一的用户ID获取函数"""
+    if USE_SUPABASE:
+        return user.get('user_id') if user else None
+    else:
+        return user.user_id if user else None
+def update_user_credits_unified(user_id, credits_change, action_type="manual"):
+    """统一的积分更新函数，支持SQLite和Supabase"""
+    if USE_SUPABASE:
+        from services.supabase_auth_service import update_user_credits_supabase
+        return update_user_credits_supabase(user_id, credits_change, action_type)
+    else:
+        return update_user_credits(user_id, credits_change, action_type)
 # backend/app.py
 from flask import Flask, request, jsonify
 from flask_cors import CORS # 用于处理跨域请求
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+from flask_compress import Compress
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
 
 # 加载环境变量
 load_dotenv()
+
+# 导入配置
+from config import get_config
 
 # 从我们创建的 services 模块中导入函数
 from services.claude_service import call_claude_api, DEFAULT_SYSTEM_PROMPT, generate_completed_essay
@@ -17,25 +48,38 @@ from services.redemption_service import redeem_code, get_user_redemption_history
 # 导入数据库模型
 from models import db, init_db
 
+# 导入缓存工具
+from utils.cache_utils import cache_user_data, cache_api_response, invalidate_user_cache, get_cache_stats
+
+# 添加Supabase服务导入和配置开关
+try:
+    from services.supabase_auth_service import register_user_supabase, login_user_supabase
+    from services.supabase_auth_service import get_current_user_supabase, get_user_profile_supabase
+    SUPABASE_AVAILABLE = True
+except ImportError:
+    SUPABASE_AVAILABLE = False
+    print("警告: Supabase服务不可用，将使用SQLite数据库")
+
+# Supabase配置开关
+USE_SUPABASE = os.environ.get('USE_SUPABASE', 'false').lower() == 'true' and SUPABASE_AVAILABLE
+MIGRATION_MODE = os.environ.get('MIGRATION_MODE', 'false').lower() == 'true'
+
+print(f"数据库配置: USE_SUPABASE={USE_SUPABASE}, MIGRATION_MODE={MIGRATION_MODE}")
+
 # 初始化 Flask 应用
 app = Flask(__name__)
 
-# 应用配置
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-string-change-in-production')
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)  # JWT token有效期
-
-# 数据库配置
-database_url = os.environ.get('DATABASE_URL', 'sqlite:///little_writers.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# 加载配置
+config_class = get_config()
+app.config.from_object(config_class)
 
 # 初始化扩展
 jwt = JWTManager(app)
 db.init_app(app)
+compress = Compress(app)
 
 # 配置CORS (Cross-Origin Resource Sharing)
-CORS(app) # 允许所有来源的跨域请求
+CORS(app, origins=app.config.get('CORS_ORIGINS', ['*']))
 
 # JWT错误处理
 @jwt.expired_token_loader
@@ -65,10 +109,15 @@ def sanitize_input(text):
         return ""
     return text.strip()[:1000]  # 限制最大长度
 
+# 根路由
+@app.route('/')
+def index():
+    return "小小作家助手后端服务正在运行！"
+
 # 用户认证相关路由
 @app.route('/api/register', methods=['POST'])
 def register():
-    """用户注册"""
+    """用户注册 - 支持Supabase切换"""
     try:
         data = request.get_json()
         if not data:
@@ -81,12 +130,22 @@ def register():
         if not all([username, email, password]):
             return jsonify({"error": "用户名、邮箱和密码都是必填项"}), 400
 
-        success, message, user_data = register_user(username, email, password)
+        # 获取客户端IP
+        ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        if ip_address and ',' in ip_address:
+            ip_address = ip_address.split(',')[0].strip()
+
+        # 根据配置选择数据库
+        if USE_SUPABASE:
+            success, message, user_data = register_user_supabase(username, email, password, ip_address)
+        else:
+            success, message, user_data = register_user(username, email, password)
 
         if success:
             return jsonify({
                 "message": message,
-                "user": user_data
+                "user": user_data,
+                "database": "Supabase" if USE_SUPABASE else "SQLite"
             }), 201
         else:
             return jsonify({"error": message}), 400
@@ -97,7 +156,7 @@ def register():
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    """用户登录"""
+    """用户登录 - 支持Supabase切换"""
     try:
         data = request.get_json()
         if not data:
@@ -109,13 +168,23 @@ def login():
         if not all([username, password]):
             return jsonify({"error": "用户名和密码都是必填项"}), 400
 
-        success, message, token, user_data = login_user(username, password)
+        # 获取客户端IP
+        ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        if ip_address and ',' in ip_address:
+            ip_address = ip_address.split(',')[0].strip()
+
+        # 根据配置选择数据库
+        if USE_SUPABASE:
+            success, message, token, user_data = login_user_supabase(username, password, ip_address)
+        else:
+            success, message, token, user_data = login_user(username, password)
 
         if success:
             return jsonify({
                 "message": message,
                 "access_token": token,
-                "user": user_data
+                "user": user_data,
+                "database": "Supabase" if USE_SUPABASE else "SQLite"
             }), 200
         else:
             return jsonify({"error": message}), 401
@@ -126,11 +195,16 @@ def login():
 
 @app.route('/api/user/profile', methods=['GET'])
 @jwt_required()
+@cache_user_data(ttl=600)  # 缓存10分钟
 def get_profile():
     """获取用户资料"""
     try:
         current_user_id = get_jwt_identity()
-        success, message, user_data = get_user_profile(current_user_id)
+
+        if USE_SUPABASE:
+            success, message, user_data = get_user_profile_supabase(current_user_id)
+        else:
+            success, message, user_data = get_user_profile(current_user_id)
 
         if success:
             return jsonify({
@@ -172,30 +246,10 @@ def redeem():
         app.logger.error(f"兑换积分失败: {e}")
         return jsonify({"error": "服务器内部错误"}), 500
 
-@app.route('/api/user/credits', methods=['GET'])
-@jwt_required()
-def get_credits():
-    """获取用户积分余额"""
-    try:
-        current_user_id = get_jwt_identity()
-        user = get_current_user()
-
-        if user:
-            return jsonify({
-                "credits": user.credits,
-                "user_id": user.user_id
-            }), 200
-        else:
-            return jsonify({"error": "用户不存在"}), 404
-
-    except Exception as e:
-        app.logger.error(f"获取用户积分失败: {e}")
-        return jsonify({"error": "服务器内部错误"}), 500
-
 @app.route('/api/user/redemption-history', methods=['GET'])
 @jwt_required()
 def get_redemption_history():
-    """获取用户兑换历史"""
+    """获取用户兑换记录"""
     try:
         current_user_id = get_jwt_identity()
         success, message, history = get_user_redemption_history(current_user_id)
@@ -209,7 +263,7 @@ def get_redemption_history():
             return jsonify({"error": message}), 400
 
     except Exception as e:
-        app.logger.error(f"获取兑换历史失败: {e}")
+        app.logger.error(f"获取兑换记录失败: {e}")
         return jsonify({"error": "服务器内部错误"}), 500
 
 @app.route('/api/user/usage-history', methods=['GET'])
@@ -235,6 +289,37 @@ def get_usage_history():
 
     except Exception as e:
         app.logger.error(f"获取使用记录失败: {e}")
+        return jsonify({"error": "服务器内部错误"}), 500
+
+@app.route('/api/user/credits', methods=['GET'])
+@jwt_required()
+def get_credits():
+    """获取用户积分余额"""
+    try:
+        current_user_id = get_jwt_identity()
+        
+        if USE_SUPABASE:
+            current_user = get_current_user_supabase()
+        else:
+            current_user = get_current_user()
+
+        if current_user:
+            if USE_SUPABASE:
+                credits = current_user.get('credits', 0)
+                user_id = current_user.get('user_id')
+            else:
+                credits = current_user.credits
+                user_id = current_user.user_id
+                
+            return jsonify({
+                "credits": credits,
+                "user_id": user_id
+            }), 200
+        else:
+            return jsonify({"error": "用户不存在"}), 404
+
+    except Exception as e:
+        app.logger.error(f"获取用户积分失败: {e}")
         return jsonify({"error": "服务器内部错误"}), 500
 
 # 管理员相关API
@@ -341,31 +426,29 @@ def admin_get_users():
         app.logger.error(f"获取用户列表失败: {e}")
         return jsonify({"error": "服务器内部错误"}), 500
 
-@app.route('/api/admin/users/<user_id>', methods=['PUT'])
+@app.route('/api/admin/users/<user_id>', methods=['PATCH'])
 @jwt_required()
 def admin_update_user(user_id):
-    """管理员修改用户信息"""
+    """管理员更新用户信息"""
     try:
         current_user = get_current_user()
         if not is_admin_user(current_user):
             return jsonify({"error": "权限不足"}), 403
-
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "请求体不能为空"}), 400
 
         from models import User
         user = User.query.get(user_id)
         if not user:
             return jsonify({"error": "用户不存在"}), 404
 
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "请求体不能为空"}), 400
+
         # 更新积分
         if 'credits' in data:
             credits = data.get('credits')
             if isinstance(credits, int) and credits >= 0:
                 user.credits = credits
-            else:
-                return jsonify({"error": "积分值必须为非负整数"}), 400
 
         # 更新邮箱
         if 'email' in data:
@@ -387,45 +470,6 @@ def admin_update_user(user_id):
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"更新用户信息失败: {e}")
-        return jsonify({"error": "服务器内部错误"}), 500
-
-@app.route('/api/admin/change-password', methods=['POST'])
-@jwt_required()
-def admin_change_password():
-    """管理员修改密码"""
-    try:
-        current_user = get_current_user()
-        if not is_admin_user(current_user):
-            return jsonify({"error": "权限不足"}), 403
-
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "请求体不能为空"}), 400
-
-        current_password = data.get('current_password')
-        new_password = data.get('new_password')
-
-        if not all([current_password, new_password]):
-            return jsonify({"error": "当前密码和新密码都是必填项"}), 400
-
-        # 验证当前密码
-        if not current_user.check_password(current_password):
-            return jsonify({"error": "当前密码错误"}), 400
-
-        # 验证新密码格式
-        from services.auth_service import validate_password
-        if not validate_password(new_password):
-            return jsonify({"error": "新密码至少6位，且包含字母和数字"}), 400
-
-        # 更新密码
-        current_user.set_password(new_password)
-        db.session.commit()
-
-        return jsonify({"message": "密码修改成功"}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        app.logger.error(f"修改密码失败: {e}")
         return jsonify({"error": "服务器内部错误"}), 500
 
 @app.route('/api/user/change-password', methods=['POST'])
@@ -464,7 +508,7 @@ def user_change_password():
 
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"用户修改密码失败: {e}")
+        app.logger.error(f"修改密码失败: {e}")
         return jsonify({"error": "服务器内部错误"}), 500
 
 @app.route('/api/chat', methods=['POST'])
@@ -477,11 +521,15 @@ def chat_handler():
     """
     try:
         # 检查用户积分
-        current_user = get_current_user()
+        if USE_SUPABASE:
+         current_user = get_current_user_supabase()
+        else:
+         current_user = get_current_user()
         if not current_user:
             return jsonify({"error": "用户不存在"}), 404
 
-        if current_user.credits < 1:
+        user_credits = get_user_credits_unified(current_user)
+        if user_credits < 1:
             return jsonify({"error": "积分不足，请先充值"}), 402
 
         data = request.get_json() # 获取前端发送的JSON数据
@@ -506,36 +554,19 @@ def chat_handler():
             if not isinstance(msg, dict) or "role" not in msg or "content" not in msg:
                 return jsonify({"error": "历史记录中的每条消息都必须包含 'role' 和 'content' 字段"}), 400
 
+        # 构建发送给Claude的消息历史
+        messages_to_send = conversation_history + [
+            {"role": "user", "content": user_message_content}
+        ]
 
-        # 构造发送给 Claude API 的消息列表
-        # 这里的逻辑是：如果前端没有发送任何历史记录（即第一次提问），
-        # 我们将添加系统提示和用户的第一条消息。
-        # 如果前端发送了历史记录，我们假设历史记录中可能已经包含了系统提示（或者前端自己管理），
-        # 然后追加用户的当前消息。
-        # claude_service.py 中的 call_claude_api 也会检查并确保 system prompt 存在。
-
-        messages_for_claude = []
-        
-        # 检查历史记录中是否已有 system prompt
-        has_system_prompt_in_history = any(msg.get("role") == "system" for msg in conversation_history)
-
-        if not conversation_history and not has_system_prompt_in_history:
-            # 这是全新的对话，添加系统提示
-            messages_for_claude.append({"role": "system", "content": DEFAULT_SYSTEM_PROMPT})
-        
-        # 添加已有的对话历史
-        messages_for_claude.extend(conversation_history)
-        
-        # 添加用户当前的新消息
-        messages_for_claude.append({"role": "user", "content": user_message_content})
-        
-        # 调用 claude_service 中的函数
-        success, response_content = call_claude_api(messages_for_claude)
+        # 调用Claude API
+        success, response_content = call_claude_api(messages_to_send)
 
         if success:
             # AI成功回复，扣除积分
-            credits_success, credits_message, new_credits = update_user_credits(
-                current_user.user_id, -1, "chat"
+            user_id = get_user_id_unified(current_user)
+            credits_success, credits_message, new_credits = update_user_credits_unified(
+                user_id, -1, "chat"
             )
 
             if not credits_success:
@@ -561,11 +592,6 @@ def chat_handler():
         app.logger.error(f"处理 /api/chat 请求时发生意外错误: {e}") # 记录更详细的服务器端错误日志
         return jsonify({"error": "服务器内部发生未知错误，请稍后再试。"}), 500
 
-# 一个简单的根路由，用于测试服务是否正在运行
-@app.route('/')
-# backend/app.py
-# ... (保持文件顶部的 import 和现有的路由函数不变) ...
-
 @app.route('/api/complete_essay', methods=['POST'])
 @jwt_required()  # 添加JWT保护
 def complete_essay_handler():
@@ -576,11 +602,12 @@ def complete_essay_handler():
     """
     try:
         # 检查用户积分
-        current_user = get_current_user()
+        current_user = get_current_user_unified()
         if not current_user:
             return jsonify({"error": "用户不存在"}), 404
 
-        if current_user.credits < 5:
+        user_credits = get_user_credits_unified(current_user)
+        if user_credits < 5:
             return jsonify({"error": "积分不足，完成作文需要5积分"}), 402
 
         data = request.get_json()
@@ -599,9 +626,11 @@ def complete_essay_handler():
 
         if success:
             # 生成成功，扣除积分
+            user_id = get_user_id_unified(current_user)
             credits_success, credits_message, new_credits = update_user_credits(
-                current_user.user_id, -5, "complete_essay"
+                user_id, -5, "complete_essay"
             )
+            
 
             if not credits_success:
                 app.logger.error(f"扣除积分失败: {credits_message}")
@@ -620,10 +649,75 @@ def complete_essay_handler():
         app.logger.error(f"处理 /api/complete_essay 请求时发生意外错误: {e}")
         return jsonify({"error": "服务器内部在生成作文时发生未知错误。"}), 500
 
-# ... (保持 if __name__ == '__main__': 部分不变) ...
+@app.route('/api/database/status', methods=['GET'])
+def database_status():
+    """获取数据库状态信息"""
+    try:
+        from datetime import datetime
+        status = {
+            "use_supabase": USE_SUPABASE,
+            "migration_mode": MIGRATION_MODE,
+            "supabase_available": SUPABASE_AVAILABLE,
+            "current_database": "Supabase" if USE_SUPABASE else "SQLite",
+            "timestamp": datetime.utcnow().isoformat()
+        }
 
-def index():
-    return "小小作家助手后端服务正在运行！"
+        # 检查数据库连接
+        if USE_SUPABASE:
+            try:
+                from services.supabase_client import SupabaseClient
+                supabase = SupabaseClient()
+                # 简单的连接测试
+                success, result = supabase._make_request('GET', 'users', params={'limit': 1})
+                status["connection_status"] = "connected" if success else "failed"
+                status["connection_error"] = result.get("error") if not success else None
+            except Exception as e:
+                status["connection_status"] = "failed"
+                status["connection_error"] = str(e)
+        else:
+            try:
+                from models import User
+                User.query.limit(1).all()
+                status["connection_status"] = "connected"
+            except Exception as e:
+                status["connection_status"] = "failed"
+                status["connection_error"] = str(e)
+
+        return jsonify(status), 200
+
+    except Exception as e:
+        app.logger.error(f"获取数据库状态失败: {e}")
+        return jsonify({"error": "获取数据库状态失败"}), 500
+
+@app.route('/api/cache/stats', methods=['GET'])
+def cache_stats():
+    """获取缓存统计信息"""
+    try:
+        stats = get_cache_stats()
+        return jsonify({
+            "message": "缓存统计获取成功",
+            "stats": stats
+        }), 200
+    except Exception as e:
+        app.logger.error(f"获取缓存统计失败: {e}")
+        return jsonify({"error": "获取缓存统计失败"}), 500
+
+@app.route('/api/cache/clear', methods=['POST'])
+@jwt_required()
+def clear_cache():
+    """清除缓存（需要管理员权限）"""
+    try:
+        current_user = get_current_user_unified()
+        if not is_admin_user(current_user):
+            return jsonify({"error": "权限不足"}), 403
+
+        from utils.cache_utils import clear_all_cache
+        clear_all_cache()
+
+        return jsonify({"message": "缓存清除成功"}), 200
+    except Exception as e:
+        app.logger.error(f"清除缓存失败: {e}")
+        return jsonify({"error": "清除缓存失败"}), 500
 
 if __name__ == '__main__':
     # 确保数据库表存在

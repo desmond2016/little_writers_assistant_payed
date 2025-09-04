@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rightSidebar = document.getElementById('rightSidebar');
     const mainContentArea = document.getElementById('mainContentArea');
 
-    const API_BASE_URL = 'http://127.0.0.1:5001/api';
+    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
     const CHAT_API_URL = `${API_BASE_URL}/chat`;
     const COMPLETE_ESSAY_API_URL = `${API_BASE_URL}/complete_essay`;
     const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
