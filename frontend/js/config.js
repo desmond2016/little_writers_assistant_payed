@@ -4,10 +4,16 @@
  * 根据环境自动选择API地址
  */
 
-// 环境检测
-const isLocalhost = window.location.hostname === 'localhost' || 
-                   window.location.hostname === '127.0.0.1' ||
-                   window.location.hostname === '';
+// 环境检测 - 更严格的本地环境判断
+const isLocalhost = (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === '0.0.0.0' ||
+    window.location.hostname === '' ||
+    window.location.hostname.startsWith('192.168.') ||
+    window.location.hostname.startsWith('10.') ||
+    window.location.hostname.startsWith('172.')
+) && !window.location.hostname.includes('onrender.com');
 
 // 配置对象
 const CONFIG = {
@@ -72,6 +78,14 @@ CONFIG.ENVIRONMENT = {
 };
 
 // 调试信息
+console.log('🔧 环境检测详情:', {
+    hostname: window.location.hostname,
+    protocol: window.location.protocol,
+    href: window.location.href,
+    isLocalhost: isLocalhost,
+    environment: isLocalhost ? 'development' : 'production'
+});
+
 if (CONFIG.FEATURES.ENABLE_PERFORMANCE_MONITORING) {
     console.log('🔧 前端配置加载完成:', {
         environment: CONFIG.ENVIRONMENT.IS_PRODUCTION ? 'production' : 'development',

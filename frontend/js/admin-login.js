@@ -10,6 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const API_BASE_URL = CONFIG.API.BASE_URL;
     const LOGIN_URL = `${API_BASE_URL}/login`;
 
+    // 调试信息
+    console.log('🔐 管理员登录页面配置:', {
+        apiBaseUrl: API_BASE_URL,
+        loginUrl: LOGIN_URL,
+        hostname: window.location.hostname
+    });
+
     // 显示消息
     function showMessage(message, type = 'info') {
         clearMessages();
