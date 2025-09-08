@@ -28,102 +28,389 @@ document.addEventListener('DOMContentLoaded', () => {
     let sidebarCollapsed = false; // 侧边栏折叠状态
     let currentUser = null; // 当前用户信息
 
-    // 用户认证相关函数
-    function getAuthToken() {
-        return localStorage.getItem('access_token');
+    // 导航栏相关函数
+    function initNavigation() {
+        // 获取导航栏元素
+        const guestNav = document.getElementById('guestNav');
+        const userNav = document.getElementById('userNav');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const adminBtn = document.getElementById('adminBtn');
+        const userAdminBtn = document.getElementById('userAdminBtn');
+        const userDropdown = document.getElementById('userDropdown');
+        const userBtn = document.getElementById('userBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // 绑定事件
+        if (loginBtn) loginBtn.addEventListener('click', showLoginModal);
+        if (registerBtn) registerBtn.addEventListener('click', showRegisterModal);
+        if (adminBtn) adminBtn.addEventListener('click', () => window.location.href = 'admin-login.html');
+        if (userAdminBtn) userAdminBtn.addEventListener('click', () => window.location.href = 'admin-login.html');
+        if (userBtn) userBtn.addEventListener('click', toggleUserDropdown);
+        if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+        // 绑定下拉菜单选项
+        const redeemBtn = document.getElementById('redeemBtn');
+        const purchaseBtn = document.getElementById('purchaseBtn');
+        const usageHistoryBtn = document.getElementById('usageHistoryBtn');
+        const changePasswordBtn = document.getElementById('changePasswordBtn');
+
+        if (redeemBtn) redeemBtn.addEventListener('click', showRedeemModal);
+        if (purchaseBtn) purchaseBtn.addEventListener('click', showPurchaseModal);
+        if (usageHistoryBtn) usageHistoryBtn.addEventListener('click', showUsageHistoryModal);
+        if (changePasswordBtn) changePasswordBtn.addEventListener('click', showChangePasswordModal);
+
+        // 点击外部关闭下拉菜单
+        document.addEventListener('click', (event) => {
+            if (userDropdown && !userDropdown.contains(event.target)) {
+                closeUserDropdown();
+            }
+        });
+
+        // 初始化显示状态
+        updateNavigationDisplay();
     }
 
-    function isLoggedIn() {
-        return !!getAuthToken();
-    }
-
-    function logout(event) {
-        if (event) {
-            event.preventDefault();
-            closeUserDropdown();
+    function toggleUserDropdown() {
+        const userDropdown = document.getElementById('userDropdown');
+        if (userDropdown) {
+            userDropdown.classList.toggle('active');
         }
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user_info');
-        window.location.href = 'auth.html';
     }
 
-    async function fetchUserProfile() {
-        const token = getAuthToken();
-        if (!token) return null;
+    // 模态框显示函数
+    function showLoginModal() {
+        const loginForm = `
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="loginEmail">用户名或邮箱</label>
+                    <input type="text" id="loginEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">密码</label>
+                    <input type="password" id="loginPassword" name="password" required>
+                </div>
+            </form>
+        `;
+        
+        const footer = `
+            <button type="button" class="action-button" onclick="handleLogin()">登录</button>
+            <p class="auth-switch">
+                还没有账号？<a href="#" onclick="showRegisterModal()">立即注册</a>
+            </p>
+        `;
+
+        universalModal.show({
+            title: '用户登录',
+            body: loginForm,
+            footer: footer,
+            bodyClass: 'auth-modal-body',
+            size: 'small'
+        });
+    }
+
+    function showRegisterModal() {
+        const registerForm = `
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="registerUsername">用户名</label>
+                    <input type="text" id="registerUsername" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">邮箱</label>
+                    <input type="email" id="registerEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">密码</label>
+                    <input type="password" id="registerPassword" name="password" required>
+                </div>
+            </form>
+        `;
+        
+        const footer = `
+            <button type="button" class="action-button" onclick="handleRegister()">注册</button>
+            <p class="auth-switch">
+                已有账号？<a href="#" onclick="showLoginModal()">立即登录</a>
+            </p>
+        `;
+
+        universalModal.show({
+            title: '用户注册',
+            body: registerForm,
+            footer: footer,
+            bodyClass: 'auth-modal-body',
+            size: 'small'
+        });
+    }
+
+    // 登录处理函数
+    window.handleLogin = async function() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        
+        if (!email || !password) {
+            alert('请填写完整信息');
+            return;
+        }
 
         try {
-            const response = await fetch(USER_PROFILE_URL, {
+            const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
             });
 
             if (response.ok) {
                 const data = await response.json();
-                return data.user;
-            } else if (response.status === 401) {
-                // Token过期，清除本地存储并跳转到登录页
-                logout();
-                return null;
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('user_info', JSON.stringify(data.user));
+                
+                // 关闭模态框
+                universalModal.hide();
+                
+                // 更新导航栏显示
+                updateNavigationDisplay();
+                
+                alert('登录成功！');
+            } else {
+                const error = await response.json();
+                alert(error.message || '登录失败，请检查用户名和密码');
             }
         } catch (error) {
-            console.error('获取用户资料失败:', error);
+            console.error('登录错误:', error);
+            alert('登录过程中出现错误，请稍后重试');
         }
-        return null;
+    };
+
+    // 注册处理函数
+    window.handleRegister = async function() {
+        const username = document.getElementById('registerUsername').value;
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        
+        if (!username || !email || !password) {
+            alert('请填写完整信息');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    password: password
+                })
+            });
+
+            if (response.ok) {
+                alert('注册成功！请登录');
+                showLoginModal();
+            } else {
+                const error = await response.json();
+                alert(error.message || '注册失败');
+            }
+        } catch (error) {
+            console.error('注册错误:', error);
+            alert('注册过程中出现错误，请稍后重试');
+        }
+    };
+
+    function showRedeemModal() {
+        const redeemForm = `
+            <div class="redeem-modal-content">
+                <h3>兑换积分</h3>
+                <p class="section-description">请输入16位兑换码来获取积分</p>
+                
+                <form id="redeemModalForm" class="modal-form">
+                    <div class="form-group">
+                        <label for="modalRedeemCode">兑换码</label>
+                        <input type="text" id="modalRedeemCode" placeholder="请输入16位兑换码" maxlength="16" required>
+                        <small>兑换码格式：XXXX-XXXX-XXXX-XXXX</small>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        const footer = `
+            <button type="button" class="action-button" onclick="handleRedeem()">兑换</button>
+            <button type="button" class="action-button secondary" onclick="universalModal.hide()">取消</button>
+        `;
+
+        universalModal.show({
+            title: '兑换积分',
+            body: redeemForm,
+            footer: footer,
+            bodyClass: 'redeem-modal-body',
+            size: 'small'
+        });
+        
+        closeUserDropdown();
     }
 
-    function updateUserInfo(user) {
-        currentUser = user;
-        if (!user) {
-            // 未登录状态
-            userInfo.innerHTML = `
-                <div class="auth-buttons">
-                    <a href="auth.html" class="auth-btn">登录</a>
-                    <a href="auth.html" class="auth-btn primary">注册</a>
-                    <a href="admin.html" class="auth-btn admin-btn">管理员</a>
-                </div>
-            `;
-        } else {
-            // 已登录状态
-            const userInitial = user.username.charAt(0).toUpperCase();
-            userInfo.innerHTML = `
-                <div class="user-profile">
-                    <div class="user-dropdown">
-                        <div class="user-trigger" onclick="toggleUserDropdown(event)">
-                            <div class="user-avatar">${userInitial}</div>
-                            <div class="user-info">
-                                <div class="user-name">${user.username}</div>
-                                <div class="user-credits">${user.credits}积分</div>
-                            </div>
-                            <span class="dropdown-arrow">▼</span>
+    function showPurchaseModal() {
+        const purchaseInfo = `
+            <div class="purchase-modal-content">
+                <div class="price-section">
+                    <h3>💰 积分价格</h3>
+                    <p>按照1元=5积分的比例</p>
+                    
+                    <div class="price-cards-compact">
+                        <div class="price-card-compact">
+                            <div class="price">¥5</div>
+                            <div class="credits">25积分</div>
                         </div>
-
-                        <div class="dropdown-menu" id="userDropdownMenu">
-                            <a href="#" class="dropdown-item" onclick="showRedeemSection(event)">🎫 兑换积分</a>
-                            <a href="#" class="dropdown-item" onclick="showPurchaseInfo(event)">🛒 购买积分</a>
-                            <a href="#" class="dropdown-item" onclick="showUsageHistory(event)">📊 使用记录</a>
-                            <a href="#" class="dropdown-item" onclick="showChangePassword(event)">🔑 修改密码</a>
-                            <a href="#" class="dropdown-item" onclick="logout(event)">🚪 退出登录</a>
+                        <div class="price-card-compact popular">
+                            <div class="price">¥10</div>
+                            <div class="credits">50积分</div>
+                            <span class="badge">推荐</span>
+                        </div>
+                        <div class="price-card-compact">
+                            <div class="price">¥20</div>
+                            <div class="credits">100积分</div>
+                        </div>
+                        <div class="price-card-compact">
+                            <div class="price">¥50</div>
+                            <div class="credits">250积分</div>
                         </div>
                     </div>
-                    <a href="admin.html" class="admin-btn" title="管理员后台">管理员</a>
                 </div>
-            `;
-        }
+                
+                <div class="purchase-methods-compact">
+                    <h4>🛒 购买方式</h4>
+                    <div class="method-item">
+                        <div class="method-icon">🎫</div>
+                        <div class="method-info">
+                            <strong>兑换码购买</strong>
+                            <p>联系管理员获取兑换码</p>
+                        </div>
+                    </div>
+                    <div class="method-item">
+                        <div class="method-icon">💬</div>
+                        <div class="method-info">
+                            <strong>联系客服</strong>
+                            <p>QQ: 123456789</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const footer = `
+            <button type="button" class="action-button" onclick="contactSupport()">联系客服</button>
+            <button type="button" class="action-button secondary" onclick="universalModal.hide()">关闭</button>
+        `;
+
+        universalModal.show({
+            title: '购买积分',
+            body: purchaseInfo,
+            footer: footer,
+            bodyClass: 'purchase-modal-body',
+            size: 'medium'
+        });
+        
+        closeUserDropdown();
+    }
+
+    function showUsageHistoryModal() {
+        const historyContent = `
+            <div class="history-modal-content">
+                <div class="history-tabs">
+                    <button class="tab-btn active" data-tab="usage" onclick="switchHistoryTab('usage')">使用记录</button>
+                    <button class="tab-btn" data-tab="redemption" onclick="switchHistoryTab('redemption')">兑换记录</button>
+                </div>
+                
+                <div class="tab-content">
+                    <div class="tab-pane active" id="modalUsageTab">
+                        <div class="history-list" id="modalUsageHistory">
+                            <div class="loading">加载中...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane" id="modalRedemptionTab">
+                        <div class="history-list" id="modalRedemptionHistory">
+                            <div class="loading">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const footer = `
+            <button type="button" class="action-button secondary" onclick="universalModal.hide()">关闭</button>
+        `;
+
+        universalModal.show({
+            title: '使用记录',
+            body: historyContent,
+            footer: footer,
+            bodyClass: 'history-modal-body',
+            size: 'large'
+        });
+        
+        // 加载使用记录数据
+        loadModalUsageHistory();
+        closeUserDropdown();
+    }
+
+    function showChangePasswordModal() {
+        const passwordForm = `
+            <div class="password-modal-content">
+                <p class="section-description">请输入当前密码和新密码</p>
+                
+                <form id="changePasswordForm" class="modal-form">
+                    <div class="form-group">
+                        <label for="currentPassword">当前密码</label>
+                        <input type="password" id="currentPassword" name="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">新密码</label>
+                        <input type="password" id="newPassword" name="newPassword" required>
+                        <small>至少6位，包含字母和数字</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmNewPassword">确认新密码</label>
+                        <input type="password" id="confirmNewPassword" name="confirmNewPassword" required>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        const footer = `
+            <button type="button" class="action-button" onclick="handleChangePassword()">修改密码</button>
+            <button type="button" class="action-button secondary" onclick="universalModal.hide()">取消</button>
+        `;
+
+        universalModal.show({
+            title: '修改密码',
+            body: passwordForm,
+            footer: footer,
+            bodyClass: 'password-modal-body',
+            size: 'small'
+        });
+        
+        closeUserDropdown();
     }
 
     // 检查登录状态并初始化用户信息
     async function initializeAuth() {
         if (isLoggedIn()) {
             const user = await fetchUserProfile();
-            updateUserInfo(user);
             if (!user) {
                 // 如果获取用户信息失败，跳转到登录页
                 window.location.href = 'auth.html';
                 return false;
             }
         } else {
-            updateUserInfo(null);
             // 未登录，跳转到登录页
             window.location.href = 'auth.html';
             return false;
@@ -131,59 +418,124 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     }
 
-    // 下拉菜单功能
-    function toggleUserDropdown(event) {
+    // 全局函数 - 从旧代码迁移，供HTML onclick使用
+    window.showRedeemSection = function(event) {
+        event.preventDefault();
+        closeUserDropdown();
+        showRedeemModal();
+    };
+
+    window.showPurchaseInfo = function(event) {
+        event.preventDefault();
+        closeUserDropdown();
+        showPurchaseModal();
+    };
+
+    window.showUsageHistory = function(event) {
+        event.preventDefault();
+        closeUserDropdown();
+        showUsageHistoryModal();
+    };
+
+    window.showChangePassword = function(event) {
+        event.preventDefault();
+        closeUserDropdown();
+        showChangePasswordModal();
+    };
+
+    window.toggleUserDropdown = function(event) {
         event.preventDefault();
         event.stopPropagation();
+        toggleUserDropdown();
+    };
 
-        const dropdown = document.querySelector('.user-dropdown');
-        if (dropdown) {
-            dropdown.classList.toggle('active');
+    // 通用模态框组件
+    class UniversalModal {
+        constructor() {
+            this.modal = document.getElementById('universalModal');
+            this.title = document.getElementById('universalModalTitle');
+            this.body = document.getElementById('universalModalBody');
+            this.footer = document.getElementById('universalModalFooter');
+            this.closeButton = document.getElementById('universalModalClose');
+            
+            this.init();
+        }
+
+        init() {
+            // 关闭按钮事件
+            if (this.closeButton) {
+                this.closeButton.addEventListener('click', () => this.hide());
+            }
+
+            // 点击背景关闭
+            if (this.modal) {
+                this.modal.addEventListener('click', (e) => {
+                    if (e.target === this.modal) {
+                        this.hide();
+                    }
+                });
+            }
+
+            // ESC键关闭
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.isVisible()) {
+                    this.hide();
+                }
+            });
+        }
+
+        show(config) {
+            const {
+                title = '标题',
+                body = '',
+                footer = '',
+                bodyClass = '',
+                size = 'medium' // small, medium, large
+            } = config;
+
+            // 设置标题
+            if (this.title) {
+                this.title.textContent = title;
+            }
+
+            // 设置内容
+            if (this.body) {
+                this.body.innerHTML = body;
+                this.body.className = `modal-body ${bodyClass}`;
+            }
+
+            // 设置底部
+            if (this.footer) {
+                this.footer.innerHTML = footer;
+            }
+
+            // 设置尺寸
+            const modalContent = this.modal.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.className = `modal-content modal-${size}`;
+            }
+
+            // 显示模态框
+            if (this.modal) {
+                this.modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // 防止背景滚动
+            }
+        }
+
+        hide() {
+            if (this.modal) {
+                this.modal.style.display = 'none';
+                document.body.style.overflow = ''; // 恢复滚动
+            }
+        }
+
+        isVisible() {
+            return this.modal && this.modal.style.display === 'flex';
         }
     }
 
-    function closeUserDropdown() {
-        const dropdown = document.querySelector('.user-dropdown');
-        if (dropdown) {
-            dropdown.classList.remove('active');
-        }
-    }
-
-    // 点击外部区域关闭下拉菜单
-    document.addEventListener('click', (event) => {
-        const dropdown = document.querySelector('.user-dropdown');
-        if (dropdown && !dropdown.contains(event.target)) {
-            closeUserDropdown();
-        }
-    });
-
-    // 兑换积分功能
-    function showRedeemSection(event) {
-        event.preventDefault();
-        closeUserDropdown();
-        window.location.href = 'profile.html?action=redeem';
-    }
-
-    // 购买积分功能
-    function showPurchaseInfo(event) {
-        event.preventDefault();
-        closeUserDropdown();
-        window.location.href = 'purchase.html';
-    }
-
-    // 使用记录功能
-    function showUsageHistory(event) {
-        event.preventDefault();
-        closeUserDropdown();
-        window.location.href = 'profile.html?action=history';
-    }
-
-    // 修改密码功能
-    function showChangePassword(event) {
-        event.preventDefault();
-        closeUserDropdown();
-        showPasswordChangeModal();
-    }
+    // 创建全局模态框实例
+    const universalModal = new UniversalModal();
 
     // 密码修改模态框
     function showPasswordChangeModal() {
@@ -727,6 +1079,272 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     document.head.appendChild(styleSheet);
 
-    // 初始化用户认证
+    // 初始化用户认证和导航栏
     initializeAuth();
+    initNavigation();
 });
+
+// 全局函数，移出DOMContentLoaded作用域
+function getAuthToken() {
+    return localStorage.getItem('access_token');
+}
+
+function isLoggedIn() {
+    return !!getAuthToken();
+}
+
+function logout(event) {
+    if (event) {
+        event.preventDefault();
+        closeUserDropdown();
+    }
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user_info');
+    window.location.href = 'auth.html';
+}
+
+async function fetchUserProfile() {
+    const token = getAuthToken();
+    if (!token) return null;
+
+    try {
+        const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
+        const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
+        
+        const response = await fetch(USER_PROFILE_URL, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return data.user;
+        } else if (response.status === 401) {
+            // Token过期，清除本地存储并跳转到登录页
+            logout();
+            return null;
+        }
+    } catch (error) {
+        console.error('获取用户资料失败:', error);
+    }
+    return null;
+}
+
+function closeUserDropdown() {
+    const userDropdown = document.getElementById('userDropdown');
+    if (userDropdown) {
+        userDropdown.classList.remove('active');
+    }
+}
+
+function updateNavigationDisplay() {
+    const guestNav = document.getElementById('guestNav');
+    const userNav = document.getElementById('userNav');
+
+    if (isLoggedIn()) {
+        // 显示用户导航栏
+        if (guestNav) guestNav.style.display = 'none';
+        if (userNav) userNav.style.display = 'flex';
+        updateUserInfo();
+    } else {
+        // 显示访客导航栏
+        if (guestNav) guestNav.style.display = 'flex';
+        if (userNav) userNav.style.display = 'none';
+    }
+}
+
+async function updateUserInfo() {
+    const user = await fetchUserProfile();
+    if (user) {
+        // 更新用户名显示
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        if (usernameDisplay) {
+            usernameDisplay.textContent = user.username || '用户';
+        }
+
+        // 更新积分显示
+        const creditsText = document.querySelector('.credits-text');
+        if (creditsText) {
+            creditsText.textContent = `${user.credits || 0}积分`;
+        }
+    }
+}
+
+// 模态框处理函数
+window.handleRedeem = async function() {
+    const redeemCode = document.getElementById('modalRedeemCode').value;
+    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
+    
+    if (!redeemCode || redeemCode.length !== 16) {
+        alert('请输入正确的16位兑换码');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/redeem`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                redemption_code: redeemCode
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            alert(`兑换成功！获得${data.credits}积分`);
+            universalModal.hide();
+            updateNavigationDisplay(); // 刷新积分显示
+        } else {
+            const error = await response.json();
+            alert(error.message || '兑换失败');
+        }
+    } catch (error) {
+        console.error('兑换错误:', error);
+        alert('兑换过程中出现错误，请稍后重试');
+    }
+};
+
+window.handleChangePassword = async function() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
+    
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        alert('请填写完整信息');
+        return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+        alert('两次输入的新密码不一致');
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        alert('新密码至少需要6位');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/change-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                current_password: currentPassword,
+                new_password: newPassword
+            })
+        });
+
+        if (response.ok) {
+            alert('密码修改成功！');
+            universalModal.hide();
+        } else {
+            const error = await response.json();
+            alert(error.message || '密码修改失败');
+        }
+    } catch (error) {
+        console.error('修改密码错误:', error);
+        alert('修改密码过程中出现错误，请稍后重试');
+    }
+};
+
+window.contactSupport = function() {
+    alert('请联系客服QQ: 123456789 或邮箱: support@example.com');
+};
+
+window.switchHistoryTab = function(tabType) {
+    // 切换标签样式
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`[data-tab="${tabType}"]`).classList.add('active');
+    
+    // 切换内容显示
+    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+    const targetPane = tabType === 'usage' ? 'modalUsageTab' : 'modalRedemptionTab';
+    document.getElementById(targetPane).classList.add('active');
+    
+    // 加载对应数据
+    if (tabType === 'usage') {
+        loadModalUsageHistory();
+    } else {
+        loadModalRedemptionHistory();
+    }
+};
+
+async function loadModalUsageHistory() {
+    const historyContainer = document.getElementById('modalUsageHistory');
+    if (!historyContainer) return;
+
+    try {
+        const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
+        const response = await fetch(`${API_BASE_URL}/user/usage-history`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.usage_history && data.usage_history.length > 0) {
+                historyContainer.innerHTML = data.usage_history.map(item => `
+                    <div class="history-item">
+                        <div class="history-info">
+                            <strong>${item.description}</strong>
+                            <span class="history-date">${new Date(item.created_at).toLocaleString()}</span>
+                        </div>
+                        <div class="history-credits">-${item.credits_used}积分</div>
+                    </div>
+                `).join('');
+            } else {
+                historyContainer.innerHTML = '<div class="no-data">暂无使用记录</div>';
+            }
+        } else {
+            historyContainer.innerHTML = '<div class="error">加载失败</div>';
+        }
+    } catch (error) {
+        console.error('加载使用记录失败:', error);
+        historyContainer.innerHTML = '<div class="error">加载失败</div>';
+    }
+}
+
+async function loadModalRedemptionHistory() {
+    const historyContainer = document.getElementById('modalRedemptionHistory');
+    if (!historyContainer) return;
+
+    try {
+        const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
+        const response = await fetch(`${API_BASE_URL}/user/redemption-history`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.redemption_history && data.redemption_history.length > 0) {
+                historyContainer.innerHTML = data.redemption_history.map(item => `
+                    <div class="history-item">
+                        <div class="history-info">
+                            <strong>兑换码: ${item.redemption_code}</strong>
+                            <span class="history-date">${new Date(item.created_at).toLocaleString()}</span>
+                        </div>
+                        <div class="history-credits">+${item.credits}积分</div>
+                    </div>
+                `).join('');
+            } else {
+                historyContainer.innerHTML = '<div class="no-data">暂无兑换记录</div>';
+            }
+        } else {
+            historyContainer.innerHTML = '<div class="error">加载失败</div>';
+        }
+    } catch (error) {
+        console.error('加载兑换记录失败:', error);
+        historyContainer.innerHTML = '<div class="error">加载失败</div>';
+    }
+}

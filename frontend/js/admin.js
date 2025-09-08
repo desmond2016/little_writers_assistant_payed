@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchBtn = document.getElementById('searchBtn');
     const userTableBody = document.getElementById('userTableBody');
     const pagination = document.getElementById('pagination');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const refreshStatsBtn = document.getElementById('refreshStatsBtn');
+    const adminLogoutBtn = document.getElementById('adminLogoutBtn');
 
     // API URLs - 使用配置文件中的API地址
     const API_BASE_URL = CONFIG.API.BASE_URL;
@@ -76,6 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
             hour: '2-digit',
             minute: '2-digit'
         });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // API调用函数
@@ -380,13 +389,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         userTableBody.innerHTML = '';
 
+        if (data.users.length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.innerHTML = `
+                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">
+                    ${currentSearch ? '没有找到匹配的用户' : '暂无用户数据'}
+                </td>
+            `;
+            userTableBody.appendChild(emptyRow);
+            return;
+        }
+
         data.users.forEach(user => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${user.username}</td>
-                <td>${user.email}</td>
-                <td>${user.credits}</td>
-                <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                <td>${escapeHtml(user.username)}</td>
+                <td>${escapeHtml(user.email)}</td>
+                <td><strong>${user.credits}</strong></td>
+                <td>${formatDate(user.created_at)}</td>
                 <td>
                     <div class="user-actions">
                         <button type="button" class="edit-btn" onclick="editUser('${user.user_id}', ${user.credits})">编辑积分</button>
@@ -408,20 +428,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevBtn = document.createElement('button');
         prevBtn.textContent = '上一页';
         prevBtn.disabled = !paginationData.has_prev;
+        prevBtn.className = paginationData.has_prev ? '' : 'disabled';
         prevBtn.onclick = () => loadUsers(currentPage - 1, currentSearch);
         pagination.appendChild(prevBtn);
 
-        // 页码信息
-        const pageInfo = document.createElement('span');
-        pageInfo.textContent = `第 ${paginationData.page} 页，共 ${paginationData.pages} 页`;
-        pagination.appendChild(pageInfo);
+        // 页码按钮
+        const startPage = Math.max(1, paginationData.page - 2);
+        const endPage = Math.min(paginationData.pages, paginationData.page + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const pageBtn = document.createElement('button');
+            pageBtn.textContent = i;
+            pageBtn.className = i === paginationData.page ? 'active' : '';
+            pageBtn.onclick = () => loadUsers(i, currentSearch);
+            pagination.appendChild(pageBtn);
+        }
 
         // 下一页按钮
         const nextBtn = document.createElement('button');
         nextBtn.textContent = '下一页';
         nextBtn.disabled = !paginationData.has_next;
+        nextBtn.className = paginationData.has_next ? '' : 'disabled';
         nextBtn.onclick = () => loadUsers(currentPage + 1, currentSearch);
         pagination.appendChild(nextBtn);
+
+        // 更新分页信息
+        if (paginationInfo) {
+            paginationInfo.innerHTML = `
+                <span>第 ${paginationData.page} / ${paginationData.pages} 页，共 ${paginationData.total} 条记录</span>
+            `;
+        }
     }
 
     async function loadUsers(page = 1, search = '') {
@@ -486,6 +522,26 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessage('网络错误，请稍后重试', 'error');
         }
     };
+
+    // 统计刷新按钮
+    if (refreshStatsBtn) {
+        refreshStatsBtn.addEventListener('click', async () => {
+            refreshStatsBtn.disabled = true;
+            refreshStatsBtn.textContent = '刷新中...';
+            
+            const stats = await fetchStatistics();
+            updateStatistics(stats);
+            
+            refreshStatsBtn.disabled = false;
+            refreshStatsBtn.textContent = '刷新统计';
+            showMessage('统计信息已刷新', 'success');
+        });
+    }
+
+    // 管理员登出按钮
+    if (adminLogoutBtn) {
+        adminLogoutBtn.addEventListener('click', logout);
+    }
 
     // 使logout函数全局可用
     window.logout = logout;

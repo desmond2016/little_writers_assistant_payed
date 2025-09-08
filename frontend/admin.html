@@ -10,65 +10,38 @@
 </head>
 <body>
     <div class="page-wrapper">
-        <header class="app-header">
-            <div class="header-controls">
-                <a href="index.html" class="back-btn">← 返回主页</a>
-            </div>
-            
-            <div class="header-center">
-                <img src="assets/images/mascot.svg" alt="小小作家助手吉祥物" class="mascot-icon">
+        <header class="admin-header">
+            <div class="header-left">
                 <h1>管理员后台</h1>
-                <p class="tagline">兑换码管理和系统统计</p>
             </div>
             
-            <div class="user-info" id="userInfo">
-                <!-- 用户信息将通过JavaScript动态加载 -->
+            <div class="header-right">
+                <button type="button" class="logout-btn" id="adminLogoutBtn">退出登录</button>
             </div>
         </header>
 
         <main class="admin-container">
-            <!-- 系统统计 -->
-            <div class="stats-section">
-                <div class="section-card">
-                    <h3>📊 系统统计</h3>
-                    <div class="stats-grid" id="statsGrid">
-                        <div class="stat-item">
-                            <div class="stat-value" id="totalUsers">-</div>
-                            <div class="stat-label">总用户数</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="totalCodes">-</div>
-                            <div class="stat-label">总兑换码</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="usedCodes">-</div>
-                            <div class="stat-label">已使用</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="totalCredits">-</div>
-                            <div class="stat-label">已发放积分</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- 生成兑换码 -->
-            <div class="generate-section">
+            <div class="admin-section">
                 <div class="section-card">
                     <h3>生成兑换码</h3>
-                    <p class="section-description">创建新的兑换码供用户使用</p>
                     
-                    <form id="generateForm">
+                    <form id="generateForm" class="admin-form">
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="creditsValue">积分价值</label>
+                                <label for="creditsValue">积分数量</label>
                                 <input type="number" id="creditsValue" min="1" max="10000" required>
                             </div>
                             
                             <div class="form-group">
-                                <label for="expiresDays">有效期（天）</label>
-                                <input type="number" id="expiresDays" min="1" max="365" placeholder="留空表示永不过期">
+                                <label for="expiresDays">有效期</label>
+                                <input type="number" id="expiresDays" min="1" max="365" placeholder="天数，留空永不过期">
                             </div>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="codeDescription">描述</label>
+                            <input type="text" id="codeDescription" placeholder="兑换码用途描述（可选）">
                         </div>
                         
                         <div class="form-actions">
@@ -84,47 +57,29 @@
                             <button type="button" class="copy-btn" id="copyBtn">复制</button>
                         </div>
                         <div class="code-info">
-                            <p>积分价值: <span id="codeCredits">0</span></p>
-                            <p>过期时间: <span id="codeExpires">永不过期</span></p>
+                            <p>积分数量: <span id="codeCredits">0</span></p>
+                            <p>有效期: <span id="codeExpires">永不过期</span></p>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 快速生成兑换码 -->
-            <div class="quick-generate-section">
-                <div class="section-card">
-                    <h3>⚡ 快速生成兑换码</h3>
-                    <p class="section-description">常用积分值的快速生成</p>
-
-                    <div class="quick-buttons">
-                        <button type="button" class="quick-btn" data-credits="25" data-days="30">25积分 (5元)</button>
-                        <button type="button" class="quick-btn" data-credits="50" data-days="60">50积分 (10元)</button>
-                        <button type="button" class="quick-btn" data-credits="100" data-days="90">100积分 (20元)</button>
-                        <button type="button" class="quick-btn" data-credits="250" data-days="180">250积分 (50元)</button>
                     </div>
                 </div>
             </div>
 
             <!-- 修改管理员密码 -->
-            <div class="password-section">
+            <div class="admin-section">
                 <div class="section-card">
-                    <h3>🔐 修改管理员密码</h3>
-                    <p class="section-description">修改当前管理员账户密码</p>
-
-                    <form id="passwordForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="currentPassword">当前密码</label>
-                                <input type="password" id="currentPassword" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="newPassword">新密码</label>
-                                <input type="password" id="newPassword" required>
-                            </div>
+                    <h3>修改管理员密码</h3>
+                    
+                    <form id="passwordForm" class="admin-form">
+                        <div class="form-group">
+                            <label for="currentPassword">当前密码</label>
+                            <input type="password" id="currentPassword" required>
                         </div>
-
+                        
+                        <div class="form-group">
+                            <label for="newPassword">新密码</label>
+                            <input type="password" id="newPassword" required>
+                        </div>
+                        
                         <div class="form-actions">
                             <button type="submit" class="action-btn primary">修改密码</button>
                         </div>
@@ -133,14 +88,13 @@
             </div>
 
             <!-- 用户管理 -->
-            <div class="user-management-section">
+            <div class="admin-section">
                 <div class="section-card">
-                    <h3>👥 用户管理</h3>
-                    <p class="section-description">管理系统用户信息</p>
-
+                    <h3>用户管理</h3>
+                    
                     <div class="user-search">
-                        <input type="text" id="userSearch" placeholder="搜索用户名或邮箱...">
-                        <button type="button" class="action-btn primary" id="searchBtn">🔍 搜索</button>
+                        <input type="text" id="userSearch" placeholder="搜索">
+                        <button type="button" class="search-btn" id="searchBtn">搜索</button>
                     </div>
 
                     <div class="user-table-container">
@@ -158,15 +112,47 @@
                                 <!-- 用户数据将通过JavaScript动态加载 -->
                             </tbody>
                         </table>
-                    </div>
-
-                    <div class="pagination" id="pagination">
-                        <!-- 分页控件将通过JavaScript动态生成 -->
+                        
+                        <div class="pagination" id="pagination">
+                            <!-- 分页按钮将通过JavaScript动态生成 -->
+                        </div>
+                        
+                        <div class="pagination-info" id="paginationInfo">
+                            <span>第1/1页</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-
+            <!-- 系统统计 -->
+            <div class="admin-section">
+                <div class="section-card">
+                    <h3>系统统计</h3>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalUsers">2</div>
+                            <div class="stat-label">总用户数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalCodes">1</div>
+                            <div class="stat-label">总兑换码</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="usedCodes">0</div>
+                            <div class="stat-label">已使用</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalCredits">2</div>
+                            <div class="stat-label">系统积分</div>
+                        </div>
+                    </div>
+                    
+                    <div class="refresh-stats">
+                        <button type="button" class="action-btn secondary" id="refreshStatsBtn">刷新统计</button>
+                    </div>
+                </div>
+            </div>
         </main>
 
         <!-- 消息提示 -->

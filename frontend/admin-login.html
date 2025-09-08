@@ -8,107 +8,86 @@
     <link rel="stylesheet" href="css/auth.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* 管理员登录专用样式 */
+        /* 管理员登录专用样式 - 按设计图9优化 */
         .admin-login-container {
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            background: var(--background-color);
             padding: 20px;
         }
 
-        .admin-header {
-            text-align: center;
-            margin-bottom: 40px;
-            color: white;
-        }
-
-        .admin-header .admin-icon {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
-            background: #e74c3c;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            margin: 0 auto 20px;
-        }
-
-        .admin-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .admin-header .tagline {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            margin: 0;
-        }
-
-        .admin-login-form {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-            padding: 40px;
+        .admin-login-card {
+            background: var(--container-bg-color);
+            border-radius: var(--border-radius-main);
+            box-shadow: var(--box-shadow);
+            padding: 60px 40px;
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+            text-align: center;
         }
 
-        .admin-login-form h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #2c3e50;
+        .admin-login-card h2 {
+            color: var(--text-color);
             font-size: 1.8rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .admin-login-card .subtitle {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 40px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            text-align: left;
         }
 
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: #2c3e50;
+            color: var(--text-color);
             font-weight: 500;
+            font-size: 0.95rem;
         }
 
         .form-group input {
             width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #ecf0f1;
-            border-radius: 10px;
+            padding: 14px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius-inner);
             font-size: 1rem;
-            transition: border-color 0.3s ease;
+            transition: all 0.3s ease;
             box-sizing: border-box;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: #e74c3c;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
         }
 
         .admin-login-button {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            padding: 16px;
+            background: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: var(--border-radius-inner);
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-top: 10px;
+            margin-top: 15px;
         }
 
         .admin-login-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3);
+            background: #357abd;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
         }
 
         .admin-login-button:disabled {
@@ -120,14 +99,14 @@
 
         .message-container {
             margin-top: 20px;
-            text-align: center;
         }
 
         .message {
             padding: 12px 16px;
-            border-radius: 8px;
+            border-radius: var(--border-radius-inner);
             margin-bottom: 10px;
             font-weight: 500;
+            font-size: 0.95rem;
         }
 
         .message.success {
@@ -143,14 +122,15 @@
         }
 
         .back-to-home {
-            margin-top: 30px;
-            text-align: center;
+            position: absolute;
+            top: 30px;
+            left: 30px;
         }
 
         .back-to-home a {
-            color: white;
+            color: var(--text-color);
             text-decoration: none;
-            font-size: 1rem;
+            font-size: 0.95rem;
             opacity: 0.8;
             transition: opacity 0.3s ease;
         }
@@ -159,57 +139,48 @@
             opacity: 1;
         }
 
-        .security-notice {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            color: white;
-            font-size: 0.9rem;
-            text-align: center;
-        }
-
-        .security-notice .icon {
-            margin-right: 8px;
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+            .admin-login-card {
+                padding: 40px 30px;
+                margin: 20px 10px;
+            }
+            
+            .back-to-home {
+                position: relative;
+                top: auto;
+                left: auto;
+                text-align: center;
+                margin-top: 30px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="admin-login-container">
-        <div class="admin-header">
-            <div class="admin-icon">🔐</div>
-            <h1>管理员登录</h1>
-            <p class="tagline">小小作家助手管理后台</p>
+        <!-- 返回主页链接 -->
+        <div class="back-to-home">
+            <a href="index.html">← 返回主页</a>
         </div>
 
-        <div class="admin-login-form">
-            <h2>管理员身份验证</h2>
+        <div class="admin-login-card">
+            <h2>管理员登录</h2>
+            <p class="subtitle">请输入管理员账号和密码</p>
+            
             <form id="adminLoginForm">
                 <div class="form-group">
-                    <label for="adminUsername">管理员用户名</label>
+                    <label for="adminUsername">管理员账号</label>
                     <input type="text" id="adminUsername" name="username" required autocomplete="username">
                 </div>
                 <div class="form-group">
-                    <label for="adminPassword">管理员密码</label>
+                    <label for="adminPassword">密码</label>
                     <input type="password" id="adminPassword" name="password" required autocomplete="current-password">
                 </div>
-                <button type="submit" class="admin-login-button">登录管理后台</button>
+                <button type="submit" class="admin-login-button">登录</button>
             </form>
 
             <!-- 消息提示 -->
             <div class="message-container" id="messageContainer"></div>
-        </div>
-
-        <!-- 安全提示 -->
-        <div class="security-notice">
-            <span class="icon">⚠️</span>
-            此页面仅供授权管理员使用，所有登录尝试都会被记录
-        </div>
-
-        <!-- 返回主页链接 -->
-        <div class="back-to-home">
-            <a href="index.html">← 返回主页</a>
         </div>
     </div>
 

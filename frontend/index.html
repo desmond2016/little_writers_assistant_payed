@@ -40,9 +40,40 @@
                 <p class="tagline">与AI一起探索写作的乐趣！</p>
             </div>
 
-            <div class="user-info" id="userInfo">
-                <!-- 用户信息将通过JavaScript动态加载 -->
-            </div>
+            <nav class="header-nav" id="headerNav">
+                <!-- 未登录状态导航 -->
+                <div class="nav-buttons guest-nav" id="guestNav">
+                    <button type="button" class="nav-btn home-btn" id="homeBtn">首页</button>
+                    <button type="button" class="nav-btn admin-btn" id="adminBtn">管理员</button>
+                    <button type="button" class="nav-btn login-btn" id="loginBtn">登录</button>
+                    <button type="button" class="nav-btn register-btn" id="registerBtn">注册</button>
+                </div>
+                
+                <!-- 已登录状态导航 -->
+                <div class="nav-buttons user-nav" id="userNav" style="display: none;">
+                    <button type="button" class="nav-btn home-btn" id="userHomeBtn">首页</button>
+                    <button type="button" class="nav-btn admin-btn" id="userAdminBtn">管理员</button>
+                    <div class="credits-display" id="creditsDisplay">
+                        <span class="credits-text">0积分</span>
+                    </div>
+                    <div class="user-dropdown" id="userDropdown">
+                        <button type="button" class="nav-btn user-btn" id="userBtn">
+                            <span class="username" id="usernameDisplay">用户</span>
+                            <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="dropdown-menu" id="dropdownMenu">
+                            <button type="button" class="dropdown-item" id="redeemBtn">兑换积分</button>
+                            <button type="button" class="dropdown-item" id="purchaseBtn">购买积分</button>
+                            <button type="button" class="dropdown-item" id="usageHistoryBtn">使用记录</button>
+                            <button type="button" class="dropdown-item" id="changePasswordBtn">修改密码</button>
+                            <div class="dropdown-divider"></div>
+                            <button type="button" class="dropdown-item logout-item" id="logoutBtn">退出登录</button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
         </header>
 
         <div class="main-content-area" id="mainContentArea">
@@ -145,6 +176,22 @@
             </div>
             <div class="modal-footer">
                 <button type="button" id="downloadPdfButton" class="action-button">下载PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用模态框 -->
+    <div id="universalModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="universalModalTitle">标题</h2>
+                <button type="button" id="universalModalClose" class="close-button">&times;</button>
+            </div>
+            <div class="modal-body" id="universalModalBody">
+                <!-- 内容将动态插入 -->
+            </div>
+            <div class="modal-footer" id="universalModalFooter">
+                <!-- 按钮将动态插入 -->
             </div>
         </div>
     </div>
