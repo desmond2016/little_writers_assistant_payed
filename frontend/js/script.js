@@ -1272,13 +1272,13 @@ window.handleRedeem = async function() {
                 'Authorization': `Bearer ${getAuthToken()}`
             },
             body: JSON.stringify({
-                redemption_code: redeemCode
+                code: redeemCode
             })
         });
 
         if (response.ok) {
             const data = await response.json();
-            alert(`兑换成功！获得${data.credits}积分`);
+            alert(`兑换成功！获得${data.credits_gained}积分`);
             universalModal.hide();
             updateNavigationDisplay(); // 刷新积分显示
         } else {
