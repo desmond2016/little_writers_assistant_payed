@@ -142,8 +142,46 @@ def cache_user_data(ttl: int = 600):
     """
     专门用于缓存用户数据的装饰器
     TTL默认为10分钟
+    包含用户ID以避免缓存冲突
     """
-    return cache_result(ttl=ttl, key_prefix="user_data")
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # 获取当前用户ID作为缓存键的一部分
+            try:
+                from flask_jwt_extended import get_jwt_identity
+                current_user_id = get_jwt_identity()
+                if current_user_id:
+                    cache_key = f"user_data:{func.__name__}:{current_user_id}:{get_cache_key(*args, **kwargs)}"
+                else:
+                    # 如果无法获取用户ID，使用原有逻辑但添加时间戳避免冲突
+                    import time
+                    cache_key = f"user_data:{func.__name__}:no_user:{int(time.time())}:{get_cache_key(*args, **kwargs)}"
+            except Exception:
+                # 如果JWT不可用，使用原有逻辑但添加时间戳
+                import time
+                cache_key = f"user_data:{func.__name__}:no_jwt:{int(time.time())}:{get_cache_key(*args, **kwargs)}"
+            
+            # 尝试从缓存获取
+            cached_result = _global_cache.get(cache_key)
+            if cached_result is not None:
+                return cached_result
+            
+            # 执行函数并缓存结果
+            result = func(*args, **kwargs)
+            _global_cache.set(cache_key, result, ttl)
+            
+            return result
+        
+        # 添加缓存控制方法
+        wrapper.cache_clear = lambda: _global_cache.clear()
+        wrapper.cache_delete = lambda user_id=None: (
+            _global_cache.delete(f"user_data:{func.__name__}:{user_id}:{get_cache_key()}")
+            if user_id else _global_cache.clear()
+        )
+        
+        return wrapper
+    return decorator
 
 def cache_api_response(ttl: int = 300):
     """
