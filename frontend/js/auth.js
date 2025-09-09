@@ -9,10 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const showLoginLink = document.getElementById('showLogin');
     const messageContainer = document.getElementById('messageContainer');
 
-    // API URLs
-    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
-    const LOGIN_URL = `${API_BASE_URL}/login`;
-    const REGISTER_URL = `${API_BASE_URL}/register`;
+    // API URLs - 使用统一配置
+    const LOGIN_URL = CONFIG.API.ENDPOINTS.LOGIN;
+    const REGISTER_URL = CONFIG.API.ENDPOINTS.REGISTER;
 
     // 切换表单显示
     showRegisterLink.addEventListener('click', (e) => {
