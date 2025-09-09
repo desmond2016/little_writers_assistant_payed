@@ -119,6 +119,7 @@ class SupabaseClient:
             'order': 'timestamp.desc',
             'limit': limit
         }
+        return self._make_request('GET', 'usage_logs', params=params)
     def get_user_by_id(self, user_id: str) -> Tuple[bool, Dict]:
         """根据用户ID获取用户信息"""
         params = {'user_id': f'eq.{user_id}'}

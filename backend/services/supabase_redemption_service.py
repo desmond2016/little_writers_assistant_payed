@@ -12,7 +12,7 @@ from services.supabase_client import SupabaseClient
 
 def generate_redemption_code():
     """生成随机兑换码"""
-    length = 12
+    length = 16
     characters = string.ascii_uppercase + string.digits
     # 排除容易混淆的字符
     characters = characters.replace('O', '').replace('0', '').replace('I', '').replace('L', '').replace('1', '')
@@ -155,7 +155,7 @@ def redeem_code_supabase(code, user_id):
             'action_type': 'redeem_code',
             'credits_consumed': -credits_value,  # 负数表示获得积分
             'timestamp': current_time,
-            'details': f'兑换码: {code}'
+            'request_details': f'兑换码: {code}'
         }
         supabase.create_usage_log(log_data)
         
