@@ -282,12 +282,13 @@ def get_redemption_history():
 def get_usage_history():
     """获取用户使用记录"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_unified()
         if not current_user:
             return jsonify({"error": "用户不存在"}), 404
 
         from models import UsageLog
-        usage_logs = UsageLog.query.filter_by(user_id=current_user.user_id)\
+        user_id = get_user_id_unified(current_user)
+        usage_logs = UsageLog.query.filter_by(user_id=user_id)\
                                   .order_by(UsageLog.timestamp.desc())\
                                   .limit(50).all()  # 最近50条记录
 
@@ -354,7 +355,7 @@ def admin_generate_code():
             return jsonify({"error": "积分价值必须大于0"}), 400
 
         success, message, code_data = create_redemption_code(
-            credits_value, expires_days, current_user.user_id
+            credits_value, expires_days, get_user_id_unified(current_user)
         )
 
         if success:
@@ -424,9 +425,15 @@ def admin_get_users():
             success, users_data = supabase._make_request('GET', 'users', params=params)
 
             if success:
-                # 获取总数 - 简化实现
-                total = len(users_data) if users_data else 0
-
+                # 获取总数 - 需要单独查询
+                count_params = {}
+                if search:
+                    count_params['or'] = f'username.ilike.%{search}%,email.ilike.%{search}%'
+                count_params['select'] = 'count'
+                
+                count_success, count_data = supabase._make_request('GET', 'users', params=count_params)
+                total = count_data[0]['count'] if count_success and count_data else len(users_data)
+                
                 return jsonify({
                     "message": "获取成功",
                     "users": users_data,
@@ -435,7 +442,7 @@ def admin_get_users():
                         "per_page": per_page,
                         "total": total,
                         "pages": max(1, (total + per_page - 1) // per_page),
-                        "has_next": len(users_data) == per_page,
+                        "has_next": len(users_data) == per_page and page * per_page < total,
                         "has_prev": page > 1
                     }
                 }), 200

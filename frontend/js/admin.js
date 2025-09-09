@@ -188,16 +188,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const userInitial = user.username.charAt(0).toUpperCase();
-        userInfo.innerHTML = `
-            <div class="user-profile">
-                <div class="user-avatar">${userInitial}</div>
-                <div class="user-details">
-                    <div class="user-name">${user.username} (管理员)</div>
-                    <div class="user-credits">积分: ${user.credits}</div>
+        if (userInfo) {
+            userInfo.innerHTML = `
+                <div class="user-profile">
+                    <div class="user-avatar">${userInitial}</div>
+                    <div class="user-details">
+                        <div class="user-name">${user.username} (管理员)</div>
+                        <div class="user-credits">积分: ${user.credits}</div>
+                    </div>
+                    <button class="logout-btn" onclick="logout()">退出</button>
                 </div>
-                <button class="logout-btn" onclick="logout()">退出</button>
-            </div>
-        `;
+            `;
+        }
     }
 
     function updateStatistics(stats) {

@@ -159,33 +159,83 @@ def get_usage_statistics():
     返回: (success: bool, message: str, stats: dict or None)
     """
     try:
-        from models import User
-
-        # 用户统计
-        total_users = User.query.count()
-
-        # 兑换码统计
-        total_codes = RedemptionCode.query.count()
-        used_codes = RedemptionCode.query.filter_by(is_used=True).count()
-        expired_codes = RedemptionCode.query.filter(
-            RedemptionCode.expires_at < datetime.utcnow(),
-            RedemptionCode.is_used == False
-        ).count()
-
-        total_credits_issued = db.session.query(
-            db.func.sum(RedemptionCode.credits_value)
-        ).filter_by(is_used=True).scalar() or 0
-
-        stats = {
-            'total_users': total_users,
-            'total_codes': total_codes,
-            'used_codes': used_codes,
-            'unused_codes': total_codes - used_codes,
-            'expired_codes': expired_codes,
-            'total_credits': total_credits_issued,
-            'usage_rate': round((used_codes / total_codes * 100), 2) if total_codes > 0 else 0
-        }
-
+        from config import USE_SUPABASE
+        
+        if USE_SUPABASE:
+            # Supabase实现
+            from services.supabase_client import SupabaseClient
+            supabase = SupabaseClient()
+            
+            # 获取用户总数
+            users_success, users_data = supabase._make_request('GET', 'users', params={'select': 'count'})
+            total_users = users_data[0]['count'] if users_success and users_data else 0
+            
+            # 获取兑换码统计
+            codes_success, codes_data = supabase._make_request('GET', 'redemption_codes', params={'select': 'count'})
+            total_codes = codes_data[0]['count'] if codes_success and codes_data else 0
+            
+            used_codes_success, used_codes_data = supabase._make_request('GET', 'redemption_codes', params={
+                'select': 'count',
+                'is_used': 'eq.true'
+            })
+            used_codes = used_codes_data[0]['count'] if used_codes_success and used_codes_data else 0
+            
+            # 获取已过期的兑换码
+            from datetime import datetime
+            current_time = datetime.utcnow().isoformat()
+            expired_codes_success, expired_codes_data = supabase._make_request('GET', 'redemption_codes', params={
+                'select': 'count',
+                'expires_at': f'lt.{current_time}',
+                'is_used': 'eq.false'
+            })
+            expired_codes = expired_codes_data[0]['count'] if expired_codes_success and expired_codes_data else 0
+            
+            # 获取已使用兑换码的积分总额
+            credits_success, credits_data = supabase._make_request('GET', 'redemption_codes', params={
+                'select': 'credits_value',
+                'is_used': 'eq.true'
+            })
+            total_credits_issued = sum(item['credits_value'] for item in credits_data) if credits_success and credits_data else 0
+            
+            stats = {
+                'total_users': total_users,
+                'total_codes': total_codes,
+                'used_codes': used_codes,
+                'unused_codes': total_codes - used_codes,
+                'expired_codes': expired_codes,
+                'total_credits': total_credits_issued,
+                'usage_rate': round((used_codes / total_codes * 100), 2) if total_codes > 0 else 0
+            }
+            
+        else:
+            # SQLite实现
+            from models import User
+            
+            # 用户统计
+            total_users = User.query.count()
+            
+            # 兑换码统计
+            total_codes = RedemptionCode.query.count()
+            used_codes = RedemptionCode.query.filter_by(is_used=True).count()
+            expired_codes = RedemptionCode.query.filter(
+                RedemptionCode.expires_at < datetime.utcnow(),
+                RedemptionCode.is_used == False
+            ).count()
+            
+            total_credits_issued = db.session.query(
+                db.func.sum(RedemptionCode.credits_value)
+            ).filter_by(is_used=True).scalar() or 0
+            
+            stats = {
+                'total_users': total_users,
+                'total_codes': total_codes,
+                'used_codes': used_codes,
+                'unused_codes': total_codes - used_codes,
+                'expired_codes': expired_codes,
+                'total_credits': total_credits_issued,
+                'usage_rate': round((used_codes / total_codes * 100), 2) if total_codes > 0 else 0
+            }
+        
         return True, "获取统计成功", stats
 
     except Exception as e:
