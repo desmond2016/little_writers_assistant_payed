@@ -178,8 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 检查是否为管理员
-        if (user.username !== 'admin') {
+        // 检查是否为管理员（使用统一的权限验证函数）
+        if (!isAdminUser(user)) {
             showMessage('权限不足，只有管理员可以访问此页面', 'error');
             setTimeout(() => {
                 window.location.href = 'index.html';
@@ -550,7 +550,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 检查是否为管理员用户
     function isAdminUser(userData) {
-        return userData && userData.username === 'admin';
+        // 统一权限验证：检查用户名和is_admin字段
+        return userData && (
+            userData.username === 'admin' || 
+            userData.is_admin === true
+        );
     }
 
     // 初始化
@@ -566,14 +570,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // 调试：查看用户数据结构
+        console.log('🔍 管理员权限验证 - 用户数据结构:', user);
+        console.log('🔍 用户名:', user.username);
+        console.log('🔍 是否管理员字段:', user.is_admin);
+
         // 检查是否为管理员
         if (!isAdminUser(user)) {
+            console.log('❌ 权限验证失败 - 非管理员用户');
             showMessage('权限不足，只有管理员可以访问此页面', 'error');
             setTimeout(() => {
                 window.location.href = 'admin-login.html';
             }, 2000);
             return;
         }
+
+        console.log('✅ 权限验证通过 - 管理员用户');
 
         updateUserInfo(user);
 
