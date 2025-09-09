@@ -1,30 +1,18 @@
 def get_current_user_unified():
-    """统一的用户获取函数，支持SQLite和Supabase"""
-    if USE_SUPABASE:
-        return get_current_user_supabase()
-    else:
-        return get_current_user()
+    """统一的用户获取函数，只使用Supabase"""
+    return get_current_user_supabase()
 
 def get_user_credits_unified(user):
     """统一的积分获取函数"""
-    if USE_SUPABASE:
-        return user.get('credits', 0) if user else 0
-    else:
-        return user.credits if user else 0
+    return user.get('credits', 0) if user else 0
 
 def get_user_id_unified(user):
     """统一的用户ID获取函数"""
-    if USE_SUPABASE:
-        return user.get('user_id') if user else None
-    else:
-        return user.user_id if user else None
+    return user.get('user_id') if user else None
+
 def update_user_credits_unified(user_id, credits_change, action_type="manual"):
-    """统一的积分更新函数，支持SQLite和Supabase"""
-    if USE_SUPABASE:
-        from services.supabase_auth_service import update_user_credits_supabase
-        return update_user_credits_supabase(user_id, credits_change, action_type)
-    else:
-        return update_user_credits(user_id, credits_change, action_type)
+    """统一的积分更新函数，只使用Supabase"""
+    return update_user_credits_supabase(user_id, credits_change, action_type)
 # backend/app.py
 from flask import Flask, request, jsonify
 from flask_cors import CORS # 用于处理跨域请求
@@ -42,29 +30,24 @@ from config import get_config
 
 # 从我们创建的 services 模块中导入函数
 from services.claude_service import call_claude_api, DEFAULT_SYSTEM_PROMPT, generate_completed_essay
-from services.auth_service import register_user, login_user, get_current_user, get_user_profile, update_user_credits
-from services.redemption_service import redeem_code, get_user_redemption_history, validate_redemption_code, create_redemption_code, get_usage_statistics
 
-# 导入数据库模型
-from models import db, init_db
+# Supabase服务导入
+from services.supabase_auth_service import (
+    register_user_supabase, login_user_supabase, get_current_user_supabase, 
+    get_user_profile_supabase, update_user_credits_supabase
+)
+from services.supabase_redemption_service import (
+    create_redemption_code_supabase, redeem_code_supabase, 
+    get_user_redemption_history_supabase, validate_redemption_code_supabase, 
+    get_usage_statistics_supabase
+)
 
 # 导入缓存工具
 from utils.cache_utils import cache_user_data, cache_api_response, invalidate_user_cache, get_cache_stats
 
-# 添加Supabase服务导入和配置开关
-try:
-    from services.supabase_auth_service import register_user_supabase, login_user_supabase
-    from services.supabase_auth_service import get_current_user_supabase, get_user_profile_supabase
-    SUPABASE_AVAILABLE = True
-except ImportError:
-    SUPABASE_AVAILABLE = False
-    print("警告: Supabase服务不可用，将使用SQLite数据库")
-
-# Supabase配置开关
-USE_SUPABASE = os.environ.get('USE_SUPABASE', 'false').lower() == 'true' and SUPABASE_AVAILABLE
-MIGRATION_MODE = os.environ.get('MIGRATION_MODE', 'false').lower() == 'true'
-
-print(f"数据库配置: USE_SUPABASE={USE_SUPABASE}, MIGRATION_MODE={MIGRATION_MODE}")
+# 强制使用Supabase，不再支持SQLite
+USE_SUPABASE = True
+print("系统配置: 使用Supabase作为唯一数据源")
 
 # 初始化 Flask 应用
 app = Flask(__name__)
@@ -73,9 +56,8 @@ app = Flask(__name__)
 config_class = get_config()
 app.config.from_object(config_class)
 
-# 初始化扩展
+# 初始化扩展（移除SQLite相关）
 jwt = JWTManager(app)
-db.init_app(app)
 compress = Compress(app)
 
 # 配置CORS (Cross-Origin Resource Sharing)
@@ -128,7 +110,7 @@ def index():
 # 用户认证相关路由
 @app.route('/api/register', methods=['POST'])
 def register():
-    """用户注册 - 支持Supabase切换"""
+    """用户注册 - 使用Supabase"""
     try:
         data = request.get_json()
         if not data:
@@ -146,17 +128,14 @@ def register():
         if ip_address and ',' in ip_address:
             ip_address = ip_address.split(',')[0].strip()
 
-        # 根据配置选择数据库
-        if USE_SUPABASE:
-            success, message, user_data = register_user_supabase(username, email, password, ip_address)
-        else:
-            success, message, user_data = register_user(username, email, password)
+        # 使用Supabase注册
+        success, message, user_data = register_user_supabase(username, email, password, ip_address)
 
         if success:
             return jsonify({
                 "message": message,
                 "user": user_data,
-                "database": "Supabase" if USE_SUPABASE else "SQLite"
+                "database": "Supabase"
             }), 201
         else:
             return jsonify({"error": message}), 400
@@ -167,7 +146,7 @@ def register():
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    """用户登录 - 支持Supabase切换"""
+    """用户登录 - 使用Supabase"""
     try:
         data = request.get_json()
         if not data:
@@ -184,18 +163,15 @@ def login():
         if ip_address and ',' in ip_address:
             ip_address = ip_address.split(',')[0].strip()
 
-        # 根据配置选择数据库
-        if USE_SUPABASE:
-            success, message, token, user_data = login_user_supabase(username, password, ip_address)
-        else:
-            success, message, token, user_data = login_user(username, password)
+        # 使用Supabase登录
+        success, message, token, user_data = login_user_supabase(username, password, ip_address)
 
         if success:
             return jsonify({
                 "message": message,
                 "access_token": token,
                 "user": user_data,
-                "database": "Supabase" if USE_SUPABASE else "SQLite"
+                "database": "Supabase"
             }), 200
         else:
             return jsonify({"error": message}), 401
@@ -211,11 +187,7 @@ def get_profile():
     """获取用户资料"""
     try:
         current_user_id = get_jwt_identity()
-
-        if USE_SUPABASE:
-            success, message, user_data = get_user_profile_supabase(current_user_id)
-        else:
-            success, message, user_data = get_user_profile(current_user_id)
+        success, message, user_data = get_user_profile_supabase(current_user_id)
 
         if success:
             return jsonify({
@@ -243,7 +215,7 @@ def redeem():
             return jsonify({"error": "兑换码不能为空"}), 400
 
         current_user_id = get_jwt_identity()
-        success, message, credits_gained = redeem_code(code, current_user_id)
+        success, message, credits_gained = redeem_code_supabase(code, current_user_id)
 
         if success:
             return jsonify({
@@ -263,7 +235,7 @@ def get_redemption_history():
     """获取用户兑换记录"""
     try:
         current_user_id = get_jwt_identity()
-        success, message, history = get_user_redemption_history(current_user_id)
+        success, message, history = get_user_redemption_history_supabase(current_user_id)
 
         if success:
             return jsonify({
@@ -286,18 +258,25 @@ def get_usage_history():
         if not current_user:
             return jsonify({"error": "用户不存在"}), 404
 
-        from models import UsageLog
         user_id = get_user_id_unified(current_user)
-        usage_logs = UsageLog.query.filter_by(user_id=user_id)\
-                                  .order_by(UsageLog.timestamp.desc())\
-                                  .limit(50).all()  # 最近50条记录
-
-        history = [log.to_dict() for log in usage_logs]
-
-        return jsonify({
-            "message": "获取成功",
-            "history": history
-        }), 200
+        
+        # 使用Supabase客户端获取使用记录
+        from services.supabase_client import SupabaseClient
+        supabase = SupabaseClient()
+        
+        success, usage_logs = supabase._make_request('GET', 'usage_logs', params={
+            'user_id': f'eq.{user_id}',
+            'order': 'timestamp.desc',
+            'limit': 50
+        })
+        
+        if success:
+            return jsonify({
+                "message": "获取成功",
+                "history": usage_logs
+            }), 200
+        else:
+            return jsonify({"error": "获取使用记录失败"}), 500
 
     except Exception as e:
         app.logger.error(f"获取使用记录失败: {e}")
@@ -309,19 +288,11 @@ def get_credits():
     """获取用户积分余额"""
     try:
         current_user_id = get_jwt_identity()
-        
-        if USE_SUPABASE:
-            current_user = get_current_user_supabase()
-        else:
-            current_user = get_current_user()
+        current_user = get_current_user_supabase()
 
         if current_user:
-            if USE_SUPABASE:
-                credits = current_user.get('credits', 0)
-                user_id = current_user.get('user_id')
-            else:
-                credits = current_user.credits
-                user_id = current_user.user_id
+            credits = current_user.get('credits', 0)
+            user_id = current_user.get('user_id')
                 
             return jsonify({
                 "credits": credits,
@@ -354,7 +325,7 @@ def admin_generate_code():
         if not credits_value or credits_value <= 0:
             return jsonify({"error": "积分价值必须大于0"}), 400
 
-        success, message, code_data = create_redemption_code(
+        success, message, code_data = create_redemption_code_supabase(
             credits_value, expires_days, get_user_id_unified(current_user)
         )
 
@@ -379,7 +350,7 @@ def admin_get_statistics():
         if not is_admin_user(current_user):
             return jsonify({"error": "权限不足"}), 403
 
-        success, message, stats = get_usage_statistics()
+        success, message, stats = get_usage_statistics_supabase()
 
         if success:
             return jsonify({
@@ -406,77 +377,47 @@ def admin_get_users():
         per_page = request.args.get('per_page', 10, type=int)
         search = request.args.get('search', '', type=str)
 
-        if USE_SUPABASE:
-            # Supabase实现
-            from services.supabase_client import SupabaseClient
-            supabase = SupabaseClient()
+        # 使用Supabase实现
+        from services.supabase_client import SupabaseClient
+        supabase = SupabaseClient()
 
-            # 构建查询参数
-            params = {
-                'order': 'created_at.desc',
-                'limit': per_page,
-                'offset': (page - 1) * per_page
-            }
+        # 构建查询参数
+        params = {
+            'order': 'created_at.desc',
+            'limit': per_page,
+            'offset': (page - 1) * per_page
+        }
 
-            # 搜索功能
+        # 搜索功能
+        if search:
+            params['or'] = f'username.ilike.%{search}%,email.ilike.%{search}%'
+
+        success, users_data = supabase._make_request('GET', 'users', params=params)
+
+        if success:
+            # 获取总数 - 需要单独查询
+            count_params = {}
             if search:
-                params['or'] = f'username.ilike.%{search}%,email.ilike.%{search}%'
-
-            success, users_data = supabase._make_request('GET', 'users', params=params)
-
-            if success:
-                # 获取总数 - 需要单独查询
-                count_params = {}
-                if search:
-                    count_params['or'] = f'username.ilike.%{search}%,email.ilike.%{search}%'
-                count_params['select'] = 'count'
-                
-                count_success, count_data = supabase._make_request('GET', 'users', params=count_params)
-                total = count_data[0]['count'] if count_success and count_data else len(users_data)
-                
-                return jsonify({
-                    "message": "获取成功",
-                    "users": users_data,
-                    "pagination": {
-                        "page": page,
-                        "per_page": per_page,
-                        "total": total,
-                        "pages": max(1, (total + per_page - 1) // per_page),
-                        "has_next": len(users_data) == per_page and page * per_page < total,
-                        "has_prev": page > 1
-                    }
-                }), 200
-            else:
-                return jsonify({"error": "获取用户列表失败"}), 500
-        else:
-            # SQLite实现
-            from models import User
-            query = User.query
-
-            # 搜索功能
-            if search:
-                query = query.filter(
-                    (User.username.contains(search)) |
-                    (User.email.contains(search))
-                )
-
-            # 分页
-            users = query.order_by(User.created_at.desc()).paginate(
-                page=page, per_page=per_page, error_out=False
-            )
-
+                count_params['or'] = f'username.ilike.%{search}%,email.ilike.%{search}%'
+            count_params['select'] = 'count'
+            
+            count_success, count_data = supabase._make_request('GET', 'users', params=count_params)
+            total = count_data[0]['count'] if count_success and count_data else len(users_data)
+            
             return jsonify({
                 "message": "获取成功",
-                "users": [user.to_dict() for user in users.items],
+                "users": users_data,
                 "pagination": {
                     "page": page,
                     "per_page": per_page,
-                    "total": users.total,
-                    "pages": users.pages,
-                    "has_next": users.has_next,
-                    "has_prev": users.has_prev
+                    "total": total,
+                    "pages": max(1, (total + per_page - 1) // per_page),
+                    "has_next": len(users_data) == per_page and page * per_page < total,
+                    "has_prev": page > 1
                 }
             }), 200
+        else:
+            return jsonify({"error": "获取用户列表失败"}), 500
 
     except Exception as e:
         app.logger.error(f"获取用户列表失败: {e}")
@@ -491,81 +432,65 @@ def admin_update_user(user_id):
         if not is_admin_user(current_user):
             return jsonify({"error": "权限不足"}), 403
 
-        from models import User
-        user = User.query.get(user_id)
-        if not user:
+        # 检查用户是否存在
+        from services.supabase_client import SupabaseClient
+        supabase = SupabaseClient()
+        
+        success, users = supabase.get_user_by_id(user_id)
+        if not success or not users:
             return jsonify({"error": "用户不存在"}), 404
 
+        user = users[0]
         data = request.get_json()
         if not data:
             return jsonify({"error": "请求体不能为空"}), 400
+
+        update_data = {}
 
         # 更新积分
         if 'credits' in data:
             credits = data.get('credits')
             if isinstance(credits, int) and credits >= 0:
-                user.credits = credits
+                update_data['credits'] = credits
 
         # 更新邮箱
         if 'email' in data:
             email = data.get('email')
-            if email and email != user.email:
+            if email and email != user.get('email'):
                 # 检查邮箱是否已被其他用户使用
-                existing_user = User.query.filter_by(email=email).first()
-                if existing_user and existing_user.user_id != user_id:
+                success, existing_user = supabase.get_user_by_email(email)
+                if success and existing_user and existing_user[0]['user_id'] != user_id:
                     return jsonify({"error": "邮箱已被其他用户使用"}), 400
-                user.email = email
+                update_data['email'] = email
 
-        db.session.commit()
+        if update_data:
+            success, result = supabase.update_user(user_id, update_data)
+            if not success:
+                return jsonify({"error": "用户信息更新失败"}), 500
 
-        return jsonify({
-            "message": "用户信息更新成功",
-            "user": user.to_dict()
-        }), 200
+            # 获取更新后的用户信息
+            success, updated_users = supabase.get_user_by_id(user_id)
+            updated_user = updated_users[0] if success and updated_users else user
+
+            return jsonify({
+                "message": "用户信息更新成功",
+                "user": updated_user
+            }), 200
+        else:
+            return jsonify({
+                "message": "没有需要更新的信息",
+                "user": user
+            }), 200
 
     except Exception as e:
-        db.session.rollback()
         app.logger.error(f"更新用户信息失败: {e}")
         return jsonify({"error": "服务器内部错误"}), 500
 
 @app.route('/api/user/change-password', methods=['POST'])
 @jwt_required()
 def user_change_password():
-    """用户修改密码"""
-    try:
-        current_user = get_current_user()
-        if not current_user:
-            return jsonify({"error": "用户不存在"}), 404
-
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "请求体不能为空"}), 400
-
-        current_password = data.get('current_password')
-        new_password = data.get('new_password')
-
-        if not all([current_password, new_password]):
-            return jsonify({"error": "当前密码和新密码都是必填项"}), 400
-
-        # 验证当前密码
-        if not current_user.check_password(current_password):
-            return jsonify({"error": "当前密码错误"}), 400
-
-        # 验证新密码格式
-        from services.auth_service import validate_password
-        if not validate_password(new_password):
-            return jsonify({"error": "新密码至少6位，且包含字母和数字"}), 400
-
-        # 更新密码
-        current_user.set_password(new_password)
-        db.session.commit()
-
-        return jsonify({"message": "密码修改成功"}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        app.logger.error(f"修改密码失败: {e}")
-        return jsonify({"error": "服务器内部错误"}), 500
+    """用户修改密码 - 暂时禁用，需要通过Supabase实现"""
+    return jsonify({"error": "密码修改功能暂时不可用，请联系管理员"}), 501
 
 @app.route('/api/chat', methods=['POST'])
 @jwt_required()  # 添加JWT保护
@@ -577,10 +502,7 @@ def chat_handler():
     """
     try:
         # 检查用户积分
-        if USE_SUPABASE:
-         current_user = get_current_user_supabase()
-        else:
-         current_user = get_current_user()
+        current_user = get_current_user_supabase()
         if not current_user:
             return jsonify({"error": "用户不存在"}), 404
 
@@ -683,7 +605,7 @@ def complete_essay_handler():
         if success:
             # 生成成功，扣除积分
             user_id = get_user_id_unified(current_user)
-            credits_success, credits_message, new_credits = update_user_credits(
+            credits_success, credits_message, new_credits = update_user_credits_unified(
                 user_id, -5, "complete_essay"
             )
             
@@ -712,32 +634,21 @@ def database_status():
         from datetime import datetime
         status = {
             "use_supabase": USE_SUPABASE,
-            "migration_mode": MIGRATION_MODE,
-            "supabase_available": SUPABASE_AVAILABLE,
-            "current_database": "Supabase" if USE_SUPABASE else "SQLite",
+            "current_database": "Supabase",
             "timestamp": datetime.utcnow().isoformat()
         }
 
-        # 检查数据库连接
-        if USE_SUPABASE:
-            try:
-                from services.supabase_client import SupabaseClient
-                supabase = SupabaseClient()
-                # 简单的连接测试
-                success, result = supabase._make_request('GET', 'users', params={'limit': 1})
-                status["connection_status"] = "connected" if success else "failed"
-                status["connection_error"] = result.get("error") if not success else None
-            except Exception as e:
-                status["connection_status"] = "failed"
-                status["connection_error"] = str(e)
-        else:
-            try:
-                from models import User
-                User.query.limit(1).all()
-                status["connection_status"] = "connected"
-            except Exception as e:
-                status["connection_status"] = "failed"
-                status["connection_error"] = str(e)
+        # 检查Supabase数据库连接
+        try:
+            from services.supabase_client import SupabaseClient
+            supabase = SupabaseClient()
+            # 简单的连接测试
+            success, result = supabase._make_request('GET', 'users', params={'limit': 1})
+            status["connection_status"] = "connected" if success else "failed"
+            status["connection_error"] = result.get("error") if not success else None
+        except Exception as e:
+            status["connection_status"] = "failed"
+            status["connection_error"] = str(e)
 
         return jsonify(status), 200
 
@@ -776,11 +687,6 @@ def clear_cache():
         return jsonify({"error": "清除缓存失败"}), 500
 
 if __name__ == '__main__':
-    # 确保数据库表存在
-    with app.app_context():
-        db.create_all()
-        print("数据库表检查完成")
-
     # 使用环境变量中的端口，或者默认为5001 (Render等平台会自动分配端口)
     port = int(os.environ.get("PORT", 5001))
     # 启动Flask开发服务器
