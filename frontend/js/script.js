@@ -1,3 +1,6 @@
+// 全局变量
+let currentUser = null; // 当前用户信息
+
 // 等待整个HTML文档加载完成后再执行脚本
 document.addEventListener('DOMContentLoaded', () => {
     // 获取页面上的主要元素
@@ -27,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let conversationHistory = [];
     let currentEssayTitle = "我的作文"; // 用于PDF的默认标题
     let sidebarCollapsed = false; // 侧边栏折叠状态
-    let currentUser = null; // 当前用户信息
 
     // 导航栏相关函数
     function initNavigation() {
