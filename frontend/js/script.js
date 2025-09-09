@@ -18,10 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const rightSidebar = document.getElementById('rightSidebar');
     const mainContentArea = document.getElementById('mainContentArea');
 
-    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
-    const CHAT_API_URL = `${API_BASE_URL}/chat`;
-    const COMPLETE_ESSAY_API_URL = `${API_BASE_URL}/complete_essay`;
-    const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
+    // 使用统一配置
+    const API_BASE_URL = CONFIG.API.BASE_URL;
+    const CHAT_API_URL = CONFIG.API.ENDPOINTS.CHAT;
+    const COMPLETE_ESSAY_API_URL = CONFIG.API.ENDPOINTS.COMPLETE_ESSAY;
+    const USER_PROFILE_URL = CONFIG.API.ENDPOINTS.USER_PROFILE;
 
     let conversationHistory = [];
     let currentEssayTitle = "我的作文"; // 用于PDF的默认标题
@@ -403,19 +404,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 检查登录状态并初始化用户信息
     async function initializeAuth() {
-        if (isLoggedIn()) {
-            const user = await fetchUserProfile();
-            if (!user) {
-                // 如果获取用户信息失败，跳转到登录页
-                window.location.href = 'auth.html';
+        try {
+            if (isLoggedIn()) {
+                const user = await fetchUserProfile();
+                if (!user) {
+                    // API错误时不立即跳转，显示错误提示并启用游客模式
+                    showApiErrorMessage();
+                    enableGuestMode();
+                    return false;
+                }
+                // 用户认证成功，更新UI
+                updateUserInterface(user);
+                return true;
+            } else {
+                // 未登录，启用游客模式
+                enableGuestMode();
                 return false;
             }
-        } else {
-            // 未登录，跳转到登录页
-            window.location.href = 'auth.html';
+        } catch (error) {
+            console.error('认证检查失败:', error);
+            showApiErrorMessage();
+            enableGuestMode();
             return false;
         }
-        return true;
+    }
+
+    // 显示API错误消息
+    function showApiErrorMessage() {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'api-error-message';
+        errorDiv.innerHTML = `
+            <div class="error-content">
+                <span class="error-icon">⚠️</span>
+                <div class="error-text">
+                    <strong>服务连接异常</strong>
+                    <p>服务器暂时不可用，部分功能受限。您仍可以浏览基本内容。</p>
+                    <button onclick="location.reload()" class="retry-btn">重试连接</button>
+                </div>
+            </div>
+        `;
+        
+        // 插入到页面顶部
+        const body = document.body;
+        if (body.firstChild) {
+            body.insertBefore(errorDiv, body.firstChild);
+        } else {
+            body.appendChild(errorDiv);
+        }
+        
+        // 5秒后自动隐藏
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.remove();
+            }
+        }, 8000);
+    }
+
+    // 启用游客模式
+    function enableGuestMode() {
+        console.log('启用游客模式');
+        currentUser = null;
+        updateNavigationDisplay();
+        
+        // 禁用需要登录的功能
+        const loginRequiredElements = document.querySelectorAll('.login-required');
+        loginRequiredElements.forEach(element => {
+            element.style.opacity = '0.5';
+            element.style.pointerEvents = 'none';
+            element.title = '此功能需要登录';
+        });
+    }
+
+    // 更新用户界面
+    function updateUserInterface(user) {
+        currentUser = user;
+        updateNavigationDisplay();
+        
+        // 启用所有功能
+        const loginRequiredElements = document.querySelectorAll('.login-required');
+        loginRequiredElements.forEach(element => {
+            element.style.opacity = '';
+            element.style.pointerEvents = '';
+            element.title = '';
+        });
     }
 
     // 全局函数 - 从旧代码迁移，供HTML onclick使用
@@ -1108,10 +1179,7 @@ async function fetchUserProfile() {
     if (!token) return null;
 
     try {
-        const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
-        const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
-        
-        const response = await fetch(USER_PROFILE_URL, {
+        const response = await fetch(CONFIG.API.ENDPOINTS.USER_PROFILE, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -1142,11 +1210,11 @@ function updateNavigationDisplay() {
     const guestNav = document.getElementById('guestNav');
     const userNav = document.getElementById('userNav');
 
-    if (isLoggedIn()) {
+    if (isLoggedIn() && currentUser) {
         // 显示用户导航栏
         if (guestNav) guestNav.style.display = 'none';
         if (userNav) userNav.style.display = 'flex';
-        updateUserInfo();
+        updateUserInfoDisplay(currentUser);
     } else {
         // 显示访客导航栏
         if (guestNav) guestNav.style.display = 'flex';
@@ -1154,19 +1222,33 @@ function updateNavigationDisplay() {
     }
 }
 
-async function updateUserInfo() {
-    const user = await fetchUserProfile();
-    if (user) {
-        // 更新用户名显示
-        const usernameDisplay = document.getElementById('usernameDisplay');
-        if (usernameDisplay) {
-            usernameDisplay.textContent = user.username || '用户';
-        }
+function updateUserInfoDisplay(user) {
+    if (!user) return;
+    
+    // 更新用户名显示
+    const usernameDisplay = document.getElementById('usernameDisplay');
+    if (usernameDisplay) {
+        usernameDisplay.textContent = user.username || '用户';
+    }
 
-        // 更新积分显示
-        const creditsText = document.querySelector('.credits-text');
-        if (creditsText) {
-            creditsText.textContent = `${user.credits || 0}积分`;
+    // 更新积分显示
+    const creditsText = document.querySelector('.credits-text');
+    if (creditsText) {
+        creditsText.textContent = `${user.credits || 0}积分`;
+    }
+    
+    console.log('用户信息已更新:', { username: user.username, credits: user.credits });
+}
+
+// 保持向后兼容的updateUserInfo函数
+async function updateUserInfo() {
+    if (currentUser) {
+        updateUserInfoDisplay(currentUser);
+    } else {
+        const user = await fetchUserProfile();
+        if (user) {
+            currentUser = user;
+            updateUserInfoDisplay(user);
         }
     }
 }
@@ -1174,7 +1256,6 @@ async function updateUserInfo() {
 // 模态框处理函数
 window.handleRedeem = async function() {
     const redeemCode = document.getElementById('modalRedeemCode').value;
-    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
     
     if (!redeemCode || redeemCode.length !== 16) {
         alert('请输入正确的16位兑换码');
@@ -1182,7 +1263,7 @@ window.handleRedeem = async function() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/redeem`, {
+        const response = await fetch(`${CONFIG.API.BASE_URL}/redeem`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1212,7 +1293,6 @@ window.handleChangePassword = async function() {
     const currentPassword = document.getElementById('currentPassword').value;
     const newPassword = document.getElementById('newPassword').value;
     const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-    const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
     
     if (!currentPassword || !newPassword || !confirmNewPassword) {
         alert('请填写完整信息');
@@ -1230,7 +1310,7 @@ window.handleChangePassword = async function() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/user/change-password`, {
+        const response = await fetch(`${CONFIG.API.BASE_URL}/user/change-password`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1282,8 +1362,7 @@ async function loadModalUsageHistory() {
     if (!historyContainer) return;
 
     try {
-        const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
-        const response = await fetch(`${API_BASE_URL}/user/usage-history`, {
+        const response = await fetch(`${CONFIG.API.BASE_URL}/user/usage-history`, {
             headers: {
                 'Authorization': `Bearer ${getAuthToken()}`
             }
@@ -1318,8 +1397,7 @@ async function loadModalRedemptionHistory() {
     if (!historyContainer) return;
 
     try {
-        const API_BASE_URL = 'https://little-writers-assistant-payed.onrender.com/api';
-        const response = await fetch(`${API_BASE_URL}/user/redemption-history`, {
+        const response = await fetch(`${CONFIG.API.BASE_URL}/user/redemption-history`, {
             headers: {
                 'Authorization': `Bearer ${getAuthToken()}`
             }

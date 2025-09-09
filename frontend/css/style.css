@@ -1901,3 +1901,83 @@ body {
         align-self: flex-end;
     }
 }
+
+/* API错误消息样式 */
+.api-error-message {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+    color: white;
+    padding: 15px 20px;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    animation: slideDown 0.3s ease-out;
+}
+
+.api-error-message .error-content {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.api-error-message .error-icon {
+    font-size: 24px;
+    margin-right: 15px;
+}
+
+.api-error-message .error-text {
+    flex: 1;
+}
+
+.api-error-message .error-text strong {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.api-error-message .error-text p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.api-error-message .retry-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 15px;
+    transition: all 0.3s ease;
+}
+
+.api-error-message .retry-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+    .api-error-message .error-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .api-error-message .retry-btn {
+        margin: 10px 0 0 0;
+    }
+}
