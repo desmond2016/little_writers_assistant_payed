@@ -256,7 +256,7 @@ const NetworkMonitor = {
     
     checkConnection: async () => {
         try {
-            const response = await fetch('https://little-writers-assistant-payed.onrender.com/api/database/status', {
+            const response = await fetch(`${CONFIG.API.BASE_URL}/database/status`, {
                 method: 'HEAD',
                 cache: 'no-cache'
             });
