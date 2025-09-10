@@ -29,9 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabPanes = document.querySelectorAll('.tab-pane');
 
-    // API URLs
-    const API_BASE_URL = 'http://127.0.0.1:5001/api';
-    const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
+    // API URLs - 使用统一配置
+    const API_BASE_URL = CONFIG.API.BASE_URL;
+    const USER_PROFILE_URL = CONFIG.API.ENDPOINTS.USER_PROFILE;
     const REDEEM_URL = `${API_BASE_URL}/redeem`;
     const USAGE_HISTORY_URL = `${API_BASE_URL}/user/usage-history`;
     const REDEMPTION_HISTORY_URL = `${API_BASE_URL}/user/redemption-history`;
@@ -195,6 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // 更新积分管理器
+        if (user.credits !== undefined) {
+            creditsManager.updateCredits(user.credits);
+        }
+
         // 更新头部用户信息
         const userInitial = user.username.charAt(0).toUpperCase();
         userInfo.innerHTML = `
@@ -311,9 +316,8 @@ document.addEventListener('DOMContentLoaded', () => {
             redeemForm.reset();
             redeemSection.style.display = 'none';
             
-            // 刷新用户信息
-            const updatedUser = await fetchUserProfile();
-            updateUserInfo(updatedUser);
+            // 使用积分管理器刷新积分
+            await creditsManager.refreshCredits();
         } else {
             showMessage(result.error, 'error');
         }
@@ -380,6 +384,25 @@ document.addEventListener('DOMContentLoaded', () => {
             renderRedemptionHistory(redemption);
         }
     }
+
+    // 初始化积分管理器
+    creditsManager.initialize();
+    
+    // 设置积分显示监听器
+    creditsManager.addListener((newCredits, oldCredits) => {
+        // 更新积分卡片显示
+        if (creditsAmount) {
+            creditsAmount.textContent = newCredits;
+        }
+        
+        // 更新用户头像区域的积分显示
+        const userCreditsDisplay = document.querySelector('.user-credits');
+        if (userCreditsDisplay) {
+            userCreditsDisplay.textContent = `积分: ${newCredits}`;
+        }
+        
+        console.log(`Profile页面积分显示已更新: ${oldCredits} → ${newCredits}`);
+    });
 
     initialize();
 });

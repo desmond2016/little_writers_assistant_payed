@@ -867,10 +867,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 conversationHistory.push({ role: 'user', content: userMessageText });
                 conversationHistory.push({ role: 'assistant', content: data.reply });
 
-                // 更新用户积分显示
-                if (data.credits_remaining !== undefined && currentUser) {
-                    currentUser.credits = data.credits_remaining;
-                    updateUserInfo(currentUser);
+                // 更新用户积分显示 - 使用积分管理器
+                if (data.credits_remaining !== undefined) {
+                    creditsManager.updateCredits(data.credits_remaining);
+                    if (currentUser) {
+                        currentUser.credits = data.credits_remaining;
+                    }
                 }
 
             } else {
@@ -968,10 +970,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(modalTitleElement) modalTitleElement.textContent = title; // 设置模态框标题
                 completedEssayBody.innerHTML = body.replace(/\n/g, '<br>');
 
-                // 更新用户积分显示
-                if (data.credits_remaining !== undefined && currentUser) {
-                    currentUser.credits = data.credits_remaining;
-                    updateUserInfo(currentUser);
+                // 更新用户积分显示 - 使用积分管理器
+                if (data.credits_remaining !== undefined) {
+                    creditsManager.updateCredits(data.credits_remaining);
+                    if (currentUser) {
+                        currentUser.credits = data.credits_remaining;
+                    }
                 }
 
                 openModal();
@@ -1155,6 +1159,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // 初始化用户认证和导航栏
     initializeAuth();
     initNavigation();
+    
+    // 初始化积分管理器
+    creditsManager.initialize();
+    
+    // 设置积分显示监听器
+    creditsManager.addListener((newCredits, oldCredits) => {
+        const creditsText = document.querySelector('.credits-text');
+        if (creditsText) {
+            creditsText.textContent = `${newCredits}积分`;
+        }
+        console.log(`积分显示已更新: ${oldCredits} → ${newCredits}`);
+    });
 });
 
 // 全局函数，移出DOMContentLoaded作用域
@@ -1233,10 +1249,9 @@ function updateUserInfoDisplay(user) {
         usernameDisplay.textContent = user.username || '用户';
     }
 
-    // 更新积分显示
-    const creditsText = document.querySelector('.credits-text');
-    if (creditsText) {
-        creditsText.textContent = `${user.credits || 0}积分`;
+    // 使用积分管理器更新积分
+    if (user.credits !== undefined) {
+        creditsManager.updateCredits(user.credits);
     }
     
     console.log('用户信息已更新:', { username: user.username, credits: user.credits });
@@ -1260,8 +1275,16 @@ window.handleRedeem = async function() {
     const redeemCode = document.getElementById('modalRedeemCode').value;
     
     if (!redeemCode || redeemCode.length !== 16) {
-        alert('请输入正确的16位兑换码');
+        showRedeemFeedback('请输入正确的16位兑换码', 'error');
         return;
+    }
+
+    // 显示加载状态
+    const redeemButton = document.querySelector('[onclick="handleRedeem()"]');
+    const originalText = redeemButton ? redeemButton.textContent : '兑换';
+    if (redeemButton) {
+        redeemButton.textContent = '兑换中...';
+        redeemButton.disabled = true;
     }
 
     try {
@@ -1278,18 +1301,99 @@ window.handleRedeem = async function() {
 
         if (response.ok) {
             const data = await response.json();
-            alert(`兑换成功！获得${data.credits_gained}积分`);
-            universalModal.hide();
-            updateNavigationDisplay(); // 刷新积分显示
+            showRedeemFeedback(`兑换成功！获得${data.credits_gained}积分`, 'success');
+            
+            // 使用积分管理器刷新积分
+            await creditsManager.refreshCredits();
+            
+            // 延迟关闭模态框，让用户看到成功消息
+            setTimeout(() => {
+                universalModal.hide();
+            }, 1500);
         } else {
             const error = await response.json();
-            alert(error.message || '兑换失败');
+            const errorMessage = error.message || '兑换失败，请稍后重试';
+            showRedeemFeedback(errorMessage, 'error');
         }
     } catch (error) {
         console.error('兑换错误:', error);
-        alert('兑换过程中出现错误，请稍后重试');
+        showRedeemFeedback('网络错误，请检查连接后重试', 'error');
+    } finally {
+        // 恢复按钮状态
+        if (redeemButton) {
+            redeemButton.textContent = originalText;
+            redeemButton.disabled = false;
+        }
     }
 };
+
+// 显示兑换反馈消息
+function showRedeemFeedback(message, type) {
+    // 移除现有的反馈消息
+    const existingFeedback = document.querySelector('.redeem-feedback');
+    if (existingFeedback) {
+        existingFeedback.remove();
+    }
+
+    // 创建反馈消息元素
+    const feedback = document.createElement('div');
+    feedback.className = `redeem-feedback ${type}`;
+    feedback.innerHTML = `
+        <div class="feedback-icon">
+            ${type === 'success' ? '✓' : '⚠'}
+        </div>
+        <div class="feedback-message">${message}</div>
+    `;
+
+    // 添加样式
+    feedback.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        margin-top: 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        animation: fadeInUp 0.3s ease-out;
+        ${type === 'success' 
+            ? 'background: #f0f9ff; color: #0f766e; border: 1px solid #67e8f9;' 
+            : 'background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5;'}
+    `;
+
+    // 添加动画样式
+    if (!document.querySelector('#feedback-styles')) {
+        const style = document.createElement('style');
+        style.id = 'feedback-styles';
+        style.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 添加到表单
+    const form = document.getElementById('redeemModalForm');
+    if (form) {
+        form.appendChild(feedback);
+
+        // 自动移除错误消息
+        if (type === 'error') {
+            setTimeout(() => {
+                if (feedback.parentNode) {
+                    feedback.remove();
+                }
+            }, 5000);
+        }
+    }
+}
 
 window.handleChangePassword = async function() {
     const currentPassword = document.getElementById('currentPassword').value;

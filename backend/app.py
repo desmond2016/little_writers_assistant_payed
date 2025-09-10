@@ -78,13 +78,9 @@ def missing_token_callback(error):
 
 # 辅助函数
 def is_admin_user(user):
-    """检查用户是否为管理员 - 支持SQLite和Supabase格式"""
+    """检查用户是否为管理员 - 仅支持Supabase格式"""
     if not user:
         return False
-
-    # SQLite格式 (User对象)
-    if hasattr(user, 'username'):
-        return user.username == 'admin'
 
     # Supabase格式 (字典)
     if isinstance(user, dict):

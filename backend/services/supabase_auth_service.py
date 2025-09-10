@@ -134,11 +134,14 @@ def get_user_profile_supabase(user_id):
         return False, "获取用户资料失败", None
 def update_user_credits_supabase(user_id, credits_change, action_type="manual"):
     """
-    更新Supabase用户积分
+    更新Supabase用户积分 - 确保原子性操作
     credits_change: 正数为增加，负数为减少
     返回: (success: bool, message: str, new_credits: int or None)
     """
     from services.supabase_client import SupabaseClient
+    from datetime import datetime
+    from flask import current_app
+    
     supabase = SupabaseClient()
     
     try:
@@ -157,25 +160,40 @@ def update_user_credits_supabase(user_id, credits_change, action_type="manual"):
         # 计算新积分
         new_credits = current_credits + credits_change
         
-        # 更新用户积分
-        update_data = {'credits': new_credits}
-        success, result = supabase.update_user(user_id, update_data)
+        # 使用数据库事务确保原子性
+        client = supabase.get_client()
         
-        if not success:
+        # 先更新用户积分
+        user_update_result = client.table('users').update({
+            'credits': new_credits
+        }).eq('user_id', user_id).execute()
+        
+        if user_update_result.data:
+            # 积分更新成功，记录使用日志（如果是消耗积分）
+            if credits_change < 0:
+                log_data = {
+                    'user_id': user_id,
+                    'action_type': action_type,
+                    'credits_consumed': abs(credits_change),
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+                
+                log_result = client.table('usage_logs').insert(log_data).execute()
+                
+                if not log_result.data:
+                    # 如果日志记录失败，回滚积分更新
+                    client.table('users').update({
+                        'credits': current_credits
+                    }).eq('user_id', user_id).execute()
+                    
+                    current_app.logger.error(f"使用日志记录失败，已回滚积分更新: user_id={user_id}")
+                    return False, "操作失败，积分未扣除", None
+            
+            current_app.logger.info(f"积分更新成功: user_id={user_id}, change={credits_change}, new_credits={new_credits}")
+            return True, "积分更新成功", new_credits
+        else:
             return False, "积分更新失败", None
         
-        # 记录使用日志（如果是消耗积分）
-        if credits_change < 0:
-            from datetime import datetime
-            log_data = {
-                'user_id': user_id,
-                'action_type': action_type,
-                'credits_consumed': abs(credits_change),
-                'timestamp': datetime.utcnow().isoformat()
-            }
-            supabase.create_usage_log(log_data)
-        
-        return True, "积分更新成功", new_credits
-        
     except Exception as e:
+        current_app.logger.error(f"积分更新异常: user_id={user_id}, error={str(e)}")
         return False, f"积分更新失败: {str(e)}", None

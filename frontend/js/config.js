@@ -39,7 +39,16 @@ const CONFIG = {
     CACHE: {
         DEFAULT_TTL: 5 * 60 * 1000,      // 5分钟
         USER_PROFILE_TTL: 10 * 60 * 1000, // 10分钟
-        USER_CREDITS_TTL: 2 * 60 * 1000   // 2分钟
+        USER_CREDITS_TTL: 0,              // 积分不缓存，确保实时性
+        
+        // 不缓存的端点列表（实时性要求高）
+        NO_CACHE_ENDPOINTS: [
+            '/api/user/profile',
+            '/api/redeem',
+            '/api/user/credits',
+            '/api/chat',
+            '/api/complete_essay'
+        ]
     },
     
     // 性能配置
