@@ -1,15 +1,11 @@
-# render.yaml - Render部署配置
+# render.yaml - Render部署配置（简化版）
 services:
   # 后端API服务
   - type: web
     name: little-writers-backend
     env: python
-    buildCommand: |
-      cd backend
-      pip install -r requirements_production.txt
-    startCommand: |
-      cd backend
-      gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 100 app:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: python start.py
     envVars:
       - key: FLASK_ENV
         value: production
@@ -29,6 +25,10 @@ services:
         value: 30
       - key: KEEP_ALIVE
         value: 2
+      - key: MAX_REQUESTS
+        value: 1000
+      - key: MAX_REQUESTS_JITTER
+        value: 100
       # 以下环境变量需要在Render控制台中设置
       - key: SECRET_KEY
         sync: false
@@ -50,7 +50,6 @@ services:
     name: little-writers-frontend
     staticPublishPath: ./frontend
     buildCommand: |
-      # 前端构建命令（如果需要）
       echo "前端静态文件准备完成"
     headers:
       - path: /*

@@ -19,6 +19,7 @@ from flask_cors import CORS # 用于处理跨域请求
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from flask_compress import Compress
 import os
+import time
 from datetime import timedelta
 from dotenv import load_dotenv
 
@@ -623,6 +624,40 @@ def complete_essay_handler():
         app.logger.error(f"处理 /api/complete_essay 请求时发生意外错误: {e}")
         return jsonify({"error": "服务器内部在生成作文时发生未知错误。"}), 500
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """健康检查端点 - 用于Render等平台监控"""
+    try:
+        # 简单的健康检查，验证基本服务可用性
+        health_data = {
+            "status": "healthy",
+            "timestamp": int(time.time()),
+            "service": "little-writers-backend",
+            "version": "1.0.0",
+            "environment": os.environ.get('FLASK_ENV', 'production')
+        }
+        
+        # 可选：检查数据库连接
+        if USE_SUPABASE:
+            try:
+                # 简单的Supabase连接测试
+                from services.supabase_auth_service import client
+                result = client.table('users').select('user_id').limit(1).execute()
+                health_data["database"] = "connected"
+            except Exception as e:
+                health_data["database"] = f"error: {str(e)}"
+                health_data["status"] = "degraded"
+        
+        return jsonify(health_data), 200
+        
+    except Exception as e:
+        app.logger.error(f"健康检查失败: {e}")
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": int(time.time())
+        }), 500
+
 @app.route('/api/database/status', methods=['GET'])
 def database_status():
     """获取数据库状态信息"""
@@ -683,8 +718,20 @@ def clear_cache():
         return jsonify({"error": "清除缓存失败"}), 500
 
 if __name__ == '__main__':
-    # 使用环境变量中的端口，或者默认为5001 (Render等平台会自动分配端口)
+    # 获取环境配置
     port = int(os.environ.get("PORT", 5001))
-    # 启动Flask开发服务器
-    # debug=True 在开发时很有用，但在生产环境中应设为False或通过环境变量控制
-    app.run(host='0.0.0.0', port=port, debug=True)
+    debug_mode = os.environ.get('DEBUG', 'false').lower() == 'true'
+    flask_env = os.environ.get('FLASK_ENV', 'production')
+    
+    print(f"🚀 启动Flask应用")
+    print(f"   - 环境: {flask_env}")
+    print(f"   - 端口: {port}")
+    print(f"   - 调试模式: {debug_mode}")
+    print(f"   - 数据库: {'Supabase' if USE_SUPABASE else 'SQLite'}")
+    
+    # 生产环境警告
+    if flask_env == 'production' and debug_mode:
+        print("⚠️  警告: 生产环境不应启用调试模式")
+    
+    # 启动Flask开发服务器 (注意: 生产环境应使用start.py中的gunicorn)
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
