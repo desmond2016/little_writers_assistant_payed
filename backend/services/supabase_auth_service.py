@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timedelta
 from flask_jwt_extended import create_access_token
 from services.supabase_client import SupabaseClient
-from services.auth_service import validate_username, validate_email, validate_password
+from utils.validators import validate_username, validate_email, validate_password
 
 def register_user_supabase(username, email, password, ip_address=None):
     """使用Supabase注册用户"""
