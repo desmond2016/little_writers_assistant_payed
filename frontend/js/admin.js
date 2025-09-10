@@ -39,9 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPage = 1;
     let currentSearch = '';
 
-    // 工具函数
+    // 管理员token管理函数
     function getAuthToken() {
-        return localStorage.getItem('access_token');
+        return localStorage.getItem('admin_token');
     }
 
     function isLoggedIn() {
@@ -49,8 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function logout() {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user_info');
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_info');
         window.location.href = 'admin-login.html';
     }
 
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!user) {
             userInfo.innerHTML = `
                 <div class="auth-buttons">
-                    <a href="auth.html" class="auth-btn">登录</a>
+                    <button class="auth-btn" onclick="goToHomePage()">回到首页</button>
                 </div>
             `;
             return;
@@ -411,7 +411,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${formatDate(user.created_at)}</td>
                 <td>
                     <div class="user-actions">
+                        <button type="button" class="detail-btn" onclick="showUserDetail('${user.user_id}')">详情</button>
                         <button type="button" class="edit-btn" onclick="editUser('${user.user_id}', ${user.credits})">编辑积分</button>
+                        <button type="button" class="disable-btn" onclick="toggleUserStatus('${user.user_id}', ${user.is_active || true})">
+                            ${user.is_active === false ? '启用' : '禁用'}
+                        </button>
                     </div>
                 </td>
             `;
@@ -598,4 +602,202 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initialize();
+
+    // 用户详情模态框功能
+    let currentUserDetail = null;
+
+    // 显示用户详情模态框
+    window.showUserDetail = async function(userId) {
+        try {
+            // 从当前用户列表中查找用户信息
+            const users = Array.from(document.querySelectorAll('#userTableBody tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 0) {
+                    return {
+                        user_id: userId, // 从参数获取
+                        username: cells[0].textContent,
+                        email: cells[1].textContent,
+                        credits: parseInt(cells[2].textContent),
+                        created_at: cells[3].textContent
+                    };
+                }
+                return null;
+            }).filter(user => user && user.username);
+
+            // 或者从后端获取完整用户信息
+            const response = await fetch(`${USERS_URL}/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                }
+            });
+
+            let userData;
+            if (response.ok) {
+                const result = await response.json();
+                userData = result.user || result;
+            } else {
+                // 如果后端API不支持，使用表格中的数据
+                userData = users.find(u => u.username) || {
+                    user_id: userId,
+                    username: '未知',
+                    email: '未知',
+                    credits: 0,
+                    created_at: new Date().toISOString(),
+                    is_active: true
+                };
+            }
+
+            currentUserDetail = userData;
+            populateUserDetailModal(userData);
+            showModal('userDetailModal');
+
+        } catch (error) {
+            console.error('获取用户详情失败:', error);
+            showMessage('获取用户详情失败', 'error');
+        }
+    };
+
+    // 填充用户详情模态框
+    function populateUserDetailModal(user) {
+        document.getElementById('detailUserId').textContent = user.user_id || '未知';
+        document.getElementById('detailUsername').textContent = user.username || '未知';
+        document.getElementById('detailEmail').textContent = user.email || '未知';
+        document.getElementById('detailCredits').textContent = user.credits || 0;
+        document.getElementById('detailStatus').textContent = user.is_active === false ? '已禁用' : '正常';
+        document.getElementById('detailCreatedAt').textContent = formatDate(user.created_at);
+        document.getElementById('detailLastLogin').textContent = formatDate(user.last_login) || '从未登录';
+        document.getElementById('detailRegistrationIp').textContent = user.registration_ip || '未记录';
+        
+        // 更新状态切换按钮文本
+        const toggleBtn = document.getElementById('toggleStatusText');
+        if (toggleBtn) {
+            toggleBtn.textContent = user.is_active === false ? '启用账户' : '禁用账户';
+        }
+    }
+
+    // 显示模态框
+    function showModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    // 关闭模态框
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    // 关闭用户详情模态框
+    window.closeUserDetailModal = function() {
+        closeModal('userDetailModal');
+        currentUserDetail = null;
+    };
+
+    // 模态框外部点击关闭
+    window.addEventListener('click', (event) => {
+        const modal = document.getElementById('userDetailModal');
+        if (event.target === modal) {
+            closeUserDetailModal();
+        }
+    });
+
+    // 关闭按钮事件
+    document.getElementById('closeUserDetailModal').addEventListener('click', closeUserDetailModal);
+
+    // ESC键关闭模态框
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeUserDetailModal();
+        }
+    });
+
+    // 模态框中的功能函数
+    window.editUserCredits = function() {
+        if (currentUserDetail) {
+            editUser(currentUserDetail.user_id, currentUserDetail.credits);
+        }
+    };
+
+    window.toggleUserStatus = async function(userId, currentStatus) {
+        const user = currentUserDetail || { user_id: userId, is_active: currentStatus };
+        const newStatus = !currentStatus;
+        const action = newStatus ? '启用' : '禁用';
+        
+        if (!confirm(`确定要${action}用户 ${user.username || userId} 吗？`)) {
+            return;
+        }
+
+        try {
+            // 这里需要后端支持用户状态切换API
+            const response = await fetch(`${USERS_URL}/${userId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: JSON.stringify({ is_active: newStatus })
+            });
+
+            if (response.ok) {
+                showMessage(`用户${action}成功`, 'success');
+                
+                // 更新当前详情数据
+                if (currentUserDetail) {
+                    currentUserDetail.is_active = newStatus;
+                    populateUserDetailModal(currentUserDetail);
+                }
+                
+                // 刷新用户列表
+                loadUsers(currentPage, currentSearch);
+            } else {
+                const result = await response.json();
+                showMessage(result.error || `用户${action}失败`, 'error');
+            }
+        } catch (error) {
+            console.error(`${action}用户失败:`, error);
+            showMessage(`${action}用户失败`, 'error');
+        }
+    };
+
+    window.resetUserPassword = async function() {
+        if (!currentUserDetail) return;
+        
+        if (!confirm(`确定要重置用户 ${currentUserDetail.username} 的密码吗？`)) {
+            return;
+        }
+
+        try {
+            // 这里需要后端支持密码重置API
+            const response = await fetch(`${API_BASE_URL}/admin/reset-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: JSON.stringify({ user_id: currentUserDetail.user_id })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                showMessage(`密码重置成功，新密码：${result.new_password}`, 'success');
+            } else {
+                const result = await response.json();
+                showMessage(result.error || '密码重置失败', 'error');
+            }
+        } catch (error) {
+            console.error('密码重置失败:', error);
+            showMessage('密码重置失败', 'error');
+        }
+    };
 });
+
+// 全局函数
+function goToHomePage() {
+    window.location.href = 'index.html';
+}

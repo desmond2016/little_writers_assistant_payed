@@ -16,6 +16,7 @@
             </div>
             
             <div class="header-right">
+                <button type="button" class="nav-btn home-btn" onclick="goToHomePage()">返回首页</button>
                 <button type="button" class="logout-btn" id="adminLogoutBtn">退出登录</button>
             </div>
         </header>
@@ -157,6 +158,69 @@
 
         <!-- 消息提示 -->
         <div class="message-container" id="messageContainer"></div>
+
+        <!-- 用户详情模态框 -->
+        <div class="modal" id="userDetailModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>用户详情</h3>
+                    <span class="close-btn" id="closeUserDetailModal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="user-detail-section">
+                        <h4>基本信息</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>用户ID:</label>
+                                <span id="detailUserId"></span>
+                            </div>
+                            <div class="detail-item">
+                                <label>用户名:</label>
+                                <span id="detailUsername"></span>
+                            </div>
+                            <div class="detail-item">
+                                <label>邮箱:</label>
+                                <span id="detailEmail"></span>
+                            </div>
+                            <div class="detail-item">
+                                <label>积分余额:</label>
+                                <span id="detailCredits"></span>
+                            </div>
+                            <div class="detail-item">
+                                <label>账户状态:</label>
+                                <span id="detailStatus"></span>
+                            </div>
+                            <div class="detail-item">
+                                <label>注册时间:</label>
+                                <span id="detailCreatedAt"></span>
+                            </div>
+                            <div class="detail-item">
+                                <label>最后登录:</label>
+                                <span id="detailLastLogin"></span>
+                            </div>
+                            <div class="detail-item">
+                                <label>注册IP:</label>
+                                <span id="detailRegistrationIp"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="user-detail-section">
+                        <h4>账户操作</h4>
+                        <div class="detail-actions">
+                            <button type="button" class="action-btn secondary" onclick="editUserCredits()">修改积分</button>
+                            <button type="button" class="action-btn warning" onclick="toggleUserStatus()">
+                                <span id="toggleStatusText">禁用账户</span>
+                            </button>
+                            <button type="button" class="action-btn primary" onclick="resetUserPassword()">重置密码</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="action-btn secondary" onclick="closeUserDetailModal()">关闭</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 配置文件 -->

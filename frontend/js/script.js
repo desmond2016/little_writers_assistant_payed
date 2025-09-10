@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loginBtn) loginBtn.addEventListener('click', showLoginModal);
         if (registerBtn) registerBtn.addEventListener('click', showRegisterModal);
         if (adminBtn) adminBtn.addEventListener('click', () => window.location.href = 'admin-login.html');
-        if (userAdminBtn) userAdminBtn.addEventListener('click', () => window.location.href = 'admin-login.html');
+        if (userAdminBtn) userAdminBtn.addEventListener('click', handleAdminBtnClick);
         if (userBtn) userBtn.addEventListener('click', toggleUserDropdown);
         if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
@@ -73,6 +73,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 初始化显示状态
         updateNavigationDisplay();
+    }
+
+    // 智能处理管理员按钮点击
+    function handleAdminBtnClick() {
+        const currentUser = getCurrentUser();
+        
+        // 检查用户是否为管理员
+        if (currentUser && (currentUser.username === 'admin' || currentUser.is_admin === true)) {
+            // 如果是管理员，直接跳转到管理员后台
+            window.location.href = 'admin.html';
+        } else {
+            // 如果不是管理员，跳转到管理员登录页面
+            window.location.href = 'admin-login.html';
+        }
     }
 
     function toggleUserDropdown() {
@@ -1163,12 +1177,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // 初始化积分管理器
     creditsManager.initialize();
     
-    // 设置积分显示监听器
+    // 设置积分显示监听器 - 更新所有积分显示位置
     creditsManager.addListener((newCredits, oldCredits) => {
+        // 更新首页积分显示
         const creditsText = document.querySelector('.credits-text');
         if (creditsText) {
             creditsText.textContent = `${newCredits}积分`;
         }
+        
+        // 更新用户下拉菜单中的积分显示
+        const userCredits = document.querySelector('.user-credits');
+        if (userCredits) {
+            userCredits.textContent = `积分: ${newCredits}`;
+        }
+        
+        // 更新用户信息中的积分显示
+        const creditsAmount = document.getElementById('creditsAmount');
+        if (creditsAmount) {
+            creditsAmount.textContent = newCredits;
+        }
+        
+        // 强制更新currentUser对象
+        if (currentUser) {
+            currentUser.credits = newCredits;
+            // 更新localStorage中的用户信息
+            localStorage.setItem('user_info', JSON.stringify(currentUser));
+        }
+        
         console.log(`积分显示已更新: ${oldCredits} → ${newCredits}`);
     });
 });
@@ -1189,7 +1224,11 @@ function logout(event) {
     }
     localStorage.removeItem('access_token');
     localStorage.removeItem('user_info');
-    window.location.href = 'auth.html';
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_info');
+    
+    // 重新加载页面回到首页，而不是跳转到auth.html
+    window.location.reload();
 }
 
 async function fetchUserProfile() {

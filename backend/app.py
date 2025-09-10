@@ -161,13 +161,13 @@ def login():
             ip_address = ip_address.split(',')[0].strip()
 
         # 使用Supabase登录
-        success, message, token, user_data = login_user_supabase(username, password, ip_address)
+        success, message, login_data = login_user_supabase(username, password, ip_address)
 
         if success:
             return jsonify({
                 "message": message,
-                "access_token": token,
-                "user": user_data,
+                "access_token": login_data['access_token'],
+                "user": login_data['user'],
                 "database": "Supabase"
             }), 200
         else:
@@ -420,6 +420,32 @@ def admin_get_users():
         app.logger.error(f"获取用户列表失败: {e}")
         return jsonify({"error": "服务器内部错误"}), 500
 
+@app.route('/api/admin/users/<user_id>', methods=['GET'])
+@jwt_required()
+def admin_get_user(user_id):
+    """管理员获取单个用户信息"""
+    try:
+        current_user = get_current_user_unified()
+        if not is_admin_user(current_user):
+            return jsonify({"error": "权限不足"}), 403
+
+        from services.supabase_client import SupabaseClient
+        supabase = SupabaseClient()
+        
+        success, users = supabase.get_user_by_id(user_id)
+        if not success or not users:
+            return jsonify({"error": "用户不存在"}), 404
+
+        user = users[0]
+        return jsonify({
+            "message": "获取成功",
+            "user": user
+        }), 200
+
+    except Exception as e:
+        app.logger.error(f"获取用户信息失败: {e}")
+        return jsonify({"error": "服务器内部错误"}), 500
+
 @app.route('/api/admin/users/<user_id>', methods=['PATCH'])
 @jwt_required()
 def admin_update_user(user_id):
@@ -459,6 +485,12 @@ def admin_update_user(user_id):
                 if success and existing_user and existing_user[0]['user_id'] != user_id:
                     return jsonify({"error": "邮箱已被其他用户使用"}), 400
                 update_data['email'] = email
+
+        # 更新用户状态
+        if 'is_active' in data:
+            is_active = data.get('is_active')
+            if isinstance(is_active, bool):
+                update_data['is_active'] = is_active
 
         if update_data:
             success, result = supabase.update_user(user_id, update_data)
@@ -641,9 +673,10 @@ def health_check():
         if USE_SUPABASE:
             try:
                 # 简单的Supabase连接测试
-                from services.supabase_auth_service import client
-                result = client.table('users').select('user_id').limit(1).execute()
-                health_data["database"] = "connected"
+                from services.supabase_client import SupabaseClient
+                supabase = SupabaseClient()
+                success, result = supabase._make_request('GET', 'users', params={'limit': 1})
+                health_data["database"] = "connected" if success else "failed"
             except Exception as e:
                 health_data["database"] = f"error: {str(e)}"
                 health_data["status"] = "degraded"

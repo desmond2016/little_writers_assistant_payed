@@ -68,7 +68,7 @@ def login_user_supabase(username, password, ip_address=None):
             # 尝试用邮箱查找
             success, users = supabase.get_user_by_email(username)
             if not success or not users:
-                return False, "用户名或密码错误", None, None
+                return False, "用户名或密码错误", None
         
         user = users[0]
         
@@ -91,10 +91,10 @@ def login_user_supabase(username, password, ip_address=None):
             expires_delta=timedelta(days=7)
         )
         
-        return True, "登录成功", access_token, user
+        return True, "登录成功", {'access_token': access_token, 'user': user}
         
     except Exception as e:
-        return False, f"登录失败: {str(e)}", None, None
+        return False, f"登录失败: {str(e)}", None
 
 def record_registration_ip(ip_address):
     """记录注册IP"""

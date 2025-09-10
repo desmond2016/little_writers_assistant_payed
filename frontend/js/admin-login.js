@@ -105,8 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // 登录成功，保存token和用户信息
-                localStorage.setItem('access_token', data.access_token);
-                localStorage.setItem('user_info', JSON.stringify(data.user));
+                // 管理员使用专门的token存储
+                localStorage.setItem('admin_token', data.access_token);
+                localStorage.setItem('admin_info', JSON.stringify(data.user));
                 
                 showMessage('管理员登录成功！正在跳转...', 'success');
                 

@@ -18,6 +18,30 @@
     font-weight: 600;
 }
 
+.admin-header .header-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.admin-header .header-right .home-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--border-radius-inner);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.admin-header .header-right .home-btn:hover {
+    background: #357abd;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+}
+
 .admin-header .header-right .logout-btn {
     background: var(--danger-color);
     color: white;
@@ -307,6 +331,208 @@
 
 .edit-btn:hover {
     background: #357abd;
+}
+
+.detail-btn {
+    background: var(--info-color);
+    color: white;
+}
+
+.detail-btn:hover {
+    background: var(--info-color-hover);
+}
+
+.disable-btn {
+    background: var(--warning-color);
+    color: white;
+}
+
+.disable-btn:hover {
+    background: var(--warning-color-hover);
+}
+
+/* 模态框样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background-color: var(--container-bg-color);
+    margin: 3% auto;
+    padding: 0;
+    border-radius: var(--border-radius-main);
+    box-shadow: var(--box-shadow);
+    width: 90%;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 2px solid var(--border-color);
+    background: var(--sidebar-bg-color);
+    border-radius: var(--border-radius-main) var(--border-radius-main) 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.close-btn {
+    color: var(--text-muted-color);
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.3s ease;
+}
+
+.close-btn:hover {
+    color: var(--danger-color);
+}
+
+.modal-body {
+    padding: 25px;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 15px 25px;
+    border-top: 1px solid var(--border-color);
+    text-align: right;
+    background: var(--sidebar-bg-color);
+    border-radius: 0 0 var(--border-radius-main) var(--border-radius-main);
+}
+
+.user-detail-section {
+    margin-bottom: 25px;
+}
+
+.user-detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.user-detail-section h4 {
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.detail-item label {
+    font-weight: 500;
+    color: var(--text-muted-color);
+    font-size: 0.9rem;
+}
+
+.detail-item span {
+    color: var(--text-color);
+    font-size: 1rem;
+    padding: 8px 12px;
+    background: var(--sidebar-bg-color);
+    border-radius: var(--border-radius-inner);
+    border: 1px solid var(--border-color);
+}
+
+.detail-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.detail-actions .action-btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+.action-btn.warning {
+    background: var(--warning-color);
+    color: white;
+}
+
+.action-btn.warning:hover {
+    background: var(--warning-color-hover);
+    transform: translateY(-1px);
+}
+
+.action-btn.info {
+    background: var(--info-color);
+    color: white;
+}
+
+.action-btn.info:hover {
+    background: var(--info-color-hover);
+    transform: translateY(-1px);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(30px); 
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0); 
+    }
+}
+
+/* 响应式模态框 */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: 10px auto;
+        max-height: 95vh;
+    }
+    
+    .detail-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .detail-actions {
+        flex-direction: column;
+    }
+    
+    .detail-actions .action-btn {
+        min-width: auto;
+    }
 }
 
 .pagination-info {

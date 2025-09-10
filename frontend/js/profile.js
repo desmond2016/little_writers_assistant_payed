@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function logout() {
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_info');
-        window.location.href = 'auth.html';
+        window.location.href = 'index.html';
     }
 
     function showMessage(message, type = 'info') {
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!user) {
             userInfo.innerHTML = `
                 <div class="auth-buttons">
-                    <a href="auth.html" class="auth-btn">登录</a>
+                    <button class="auth-btn" onclick="goToHomePage()">回到首页</button>
                 </div>
             `;
             return;
@@ -351,13 +351,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 初始化
     async function initialize() {
         if (!isLoggedIn()) {
-            window.location.href = 'auth.html';
+            window.location.href = 'index.html';
             return;
         }
 
         const user = await fetchUserProfile();
         if (!user) {
-            window.location.href = 'auth.html';
+            window.location.href = 'index.html';
             return;
         }
 
@@ -406,3 +406,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initialize();
 });
+
+// 全局函数
+function goToHomePage() {
+    window.location.href = 'index.html';
+}
