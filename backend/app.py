@@ -751,12 +751,27 @@ def clear_cache():
         return jsonify({"error": "清除缓存失败"}), 500
 
 if __name__ == '__main__':
+    # 验证Supabase连接
+    print("验证Supabase数据库连接...")
+    try:
+        from services.supabase_client import SupabaseClient
+        supabase = SupabaseClient()
+        success, result = supabase._make_request('GET', 'users', params={'limit': 1})
+        if success:
+            print("Supabase数据库连接成功")
+        else:
+            print(f"Supabase数据库连接失败: {result}")
+            exit(1)
+    except Exception as e:
+        print(f"Supabase数据库连接测试失败: {e}")
+        exit(1)
+    
     # 获取环境配置
     port = int(os.environ.get("PORT", 5001))
     debug_mode = os.environ.get('DEBUG', 'false').lower() == 'true'
     flask_env = os.environ.get('FLASK_ENV', 'production')
     
-    print(f"🚀 启动Flask应用")
+    print(f"启动Flask应用")
     print(f"   - 环境: {flask_env}")
     print(f"   - 端口: {port}")
     print(f"   - 调试模式: {debug_mode}")
@@ -764,7 +779,7 @@ if __name__ == '__main__':
     
     # 生产环境警告
     if flask_env == 'production' and debug_mode:
-        print("⚠️  警告: 生产环境不应启用调试模式")
+        print("警告: 生产环境不应启用调试模式")
     
     # 启动Flask开发服务器 (注意: 生产环境应使用start.py中的gunicorn)
     app.run(host='0.0.0.0', port=port, debug=debug_mode)

@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import json
 import time
+from supabase import create_client, Client
 
 class SupabaseClient:
     def __init__(self):
@@ -25,6 +26,9 @@ class SupabaseClient:
 
         # 创建优化的session
         self.session = self._create_session()
+        
+        # 创建Supabase客户端实例
+        self._client = None
 
     def _create_session(self) -> requests.Session:
         """创建优化的requests session"""
@@ -124,4 +128,9 @@ class SupabaseClient:
         """根据用户ID获取用户信息"""
         params = {'user_id': f'eq.{user_id}'}
         return self._make_request('GET', 'users', params=params)
-        
+    
+    def get_client(self) -> Client:
+        """获取Supabase客户端实例"""
+        if self._client is None:
+            self._client = create_client(self.url, self.service_key)
+        return self._client

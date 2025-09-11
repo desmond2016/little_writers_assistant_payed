@@ -76,7 +76,7 @@ def login_user_supabase(username, password, ip_address=None):
         if not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
             # 记录登录失败
             record_login_attempt(user['user_id'], ip_address, False, "密码错误")
-            return False, "用户名或密码错误", None, None
+            return False, "用户名或密码错误", None
         
         # 更新最后登录时间
         update_data = {'last_login': datetime.utcnow().isoformat()}

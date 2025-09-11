@@ -30,6 +30,12 @@ def validate_password(password):
     # 密码至少6位
     if len(password) < 6:
         return False
+    # 必须包含字母
+    if not re.search(r'[a-zA-Z]', password):
+        return False
+    # 必须包含数字
+    if not re.search(r'[0-9]', password):
+        return False
     return True
 
 def validate_credits_amount(amount):
